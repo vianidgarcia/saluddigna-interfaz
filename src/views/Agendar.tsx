@@ -7,7 +7,7 @@ import { CHIPS, STUDIES } from '../data/studies'
 import { clinicasPorDistancia, findClinic } from '../data/clinics'
 import { NB, WA, container, chip, link, outlineBtn, solidBtn } from '../components/ui'
 import {
-  METODO, PASOS, avance, codigoEnviado, conEvento, fechaLarga, pasoCompleto, ultimos4,
+  LISTA_PASOS, METODO, PASOS, TOTAL_PASOS, avance, conEvento, fechaLarga, pasoCompleto, yaPaso,
   type MetodoPago, type Paso, type Tramite,
 } from '../state/tramite'
 
@@ -15,13 +15,10 @@ const PREGUNTA: Record<Paso, string> = {
   1: '¿Qué estudio necesitas?',
   2: '¿En qué clínica te atendemos?',
   3: '¿Qué día y a qué hora?',
-  4: 'Confirma tu WhatsApp',
-  5: 'Revisa tu cita y elige cómo pagar',
+  4: 'Revisa tu cita y elige cómo pagar',
 }
-const CODIGO_DEMO = '123456'
 const optionRow = 'flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition-colors has-[:checked]:border-[#005BB0] has-[:checked]:bg-[#EBF4FC]'
 const radio = 'mt-0.5 size-5 shrink-0 accent-[#005BB0]'
-const fieldInput = 'h-12 w-full rounded-lg border border-[#D6E4F5] bg-white px-4 text-base text-[#1F2933] transition-colors hover:border-[#0074D9] aria-[invalid=true]:border-2 aria-[invalid=true]:border-[#B3261E]'
 
 export function Agendar() {
   const { tramite } = useApp()
@@ -50,17 +47,15 @@ function Flujo({ t }: { t: Tramite }) {
     if (p === 1) return t.estudio?.nombre ?? ''
     if (p === 2) return t.clinica ?? 'Clínica pendiente'
     if (p === 3) return t.fecha ? `${fechaLarga(t.fecha)}, ${t.hora}` : ''
-    if (p === 4) return `WhatsApp verificado ${ultimos4(t.paciente.whatsapp)}`
     return ''
   }
 
   const siguiente = () => {
-    const pasos: Paso[] = [1, 2, 3, 4, 5]
     // desde el resumen: volver al primer dato que falte (o al resumen)
     const next: Paso = t.desdeResumen
-      ? pasos.find((p) => p > paso && p < 5 && !pasoCompleto(t, p)) ?? 5
-      : (Math.min(paso + 1, 5) as Paso)
-    irA(next, 'tramite.paso_completado', `Paso ${paso} (${PASOS[paso]}): ${detalle(paso)}`, { desdeResumen: next === 5 ? false : t.desdeResumen })
+      ? LISTA_PASOS.find((p) => p > paso && p < TOTAL_PASOS && !pasoCompleto(t, p)) ?? TOTAL_PASOS
+      : (Math.min(paso + 1, TOTAL_PASOS) as Paso)
+    irA(next, 'tramite.paso_completado', `Paso ${paso} (${PASOS[paso]}): ${detalle(paso)}`, { desdeResumen: next === TOTAL_PASOS ? false : t.desdeResumen })
   }
   const atras = () => irA((paso - 1) as Paso, 'tramite.paso_regresado', `Regresó al paso ${paso - 1}: ${PASOS[(paso - 1) as Paso]}`)
   const cambiar = (p: Paso) => irA(p, 'tramite.dato_editado', `Abrió “Cambiar” en ${PASOS[p]} desde el resumen`, { desdeResumen: true })
@@ -69,10 +64,13 @@ function Flujo({ t }: { t: Tramite }) {
   let falta: string | null = null
   if (paso === 1 && !t.estudio) falta = 'Elige una categoría y luego tu estudio para continuar.'
   if (paso === 2 && !pasoCompleto(t, 2)) falta = 'Elige una clínica o marca “Aún no lo decido” para continuar.'
-  if (paso === 3 && !t.fecha) falta = 'Elige un día para ver los horarios.'
-  if (paso === 3 && t.fecha && !t.hora) falta = 'Elige un horario para continuar.'
-  if (paso === 4 && !t.paciente.verificado) falta = codigoEnviado(t) ? 'Escribe el código que te enviamos para continuar.' : 'Verifica tu número de WhatsApp para continuar.'
-  if (paso === 5) falta = !t.clinica ? 'Elige una clínica para confirmar tu cita (toca “Cambiar” en Clínica).' : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
+  if (paso === 3 && (!t.fecha || yaPaso(t.fecha))) falta = 'Elige un día en el calendario para continuar.'
+  else if (paso === 3 && (!t.hora || yaPaso(t.fecha!, t.hora))) falta = 'Elige la hora de tu cita para continuar.'
+  if (paso === 4) {
+    falta = !t.clinica ? 'Elige una clínica para confirmar tu cita (toca “Cambiar” en Clínica).'
+      : !t.fecha || !t.hora || yaPaso(t.fecha, t.hora) ? 'La fecha u hora de tu cita ya pasó: toca “Cambiar” en Fecha y hora.'
+        : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
+  }
 
   const confirmar = () => {
     if (t.metodoPago === 'oxxo') {
@@ -83,7 +81,7 @@ function Flujo({ t }: { t: Tramite }) {
     update((x) => conEvento({ ...x, estado: 'confirmada', desdeResumen: false }, 'cita.confirmada', `${METODO[x.metodoPago!]} · ${x.fecha ? fechaLarga(x.fecha) : ''} ${x.hora ?? ''}`))
     window.scrollTo(0, 0)
   }
-  const primario = paso === 5
+  const primario = paso === TOTAL_PASOS
     ? (t.metodoPago === 'oxxo' ? 'Generar referencia de pago' : 'Confirmar cita')
     : t.desdeResumen ? 'Guardar y continuar' : 'Continuar'
 
@@ -94,15 +92,14 @@ function Flujo({ t }: { t: Tramite }) {
       <Progreso paso={paso} />
       <div className="mt-6 max-w-3xl lg:mt-8">
         <h2 ref={headRef} tabIndex={-1} data-focus-target className="t-card font-head text-[#1F2933]">
-          <span className="sr-only">Paso {paso} de 5: </span>{PREGUNTA[paso]}
+          <span className="sr-only">Paso {paso} de {TOTAL_PASOS}: </span>{PREGUNTA[paso]}
         </h2>
         {paso === 1 && <p className="mt-1 t-meta text-[#5B6B7A]">Guardamos tu avance en cada paso. Si te interrumpes, retómalo desde el inicio o por WhatsApp.</p>}
         <div className="mt-6">
           {paso === 1 && <PasoEstudio t={t} />}
           {paso === 2 && <PasoClinica t={t} />}
           {paso === 3 && <PasoFecha t={t} />}
-          {paso === 4 && <PasoIdentificacion t={t} />}
-          {paso === 5 && <PasoPago t={t} onCambiar={cambiar} />}
+          {paso === 4 && <PasoPago t={t} onCambiar={cambiar} />}
         </div>
         <div className="mt-8 border-t border-[#D6E4F5] pt-6">
             {falta && <p id="falta" className="mb-3 t-body text-[#43474A]">{falta}</p>}
@@ -110,7 +107,7 @@ function Flujo({ t }: { t: Tramite }) {
               {paso > 1
                 ? <button onClick={atras} className={outlineBtn}><Icon n="left" />Atrás</button>
                 : <button onClick={() => go('home')} className={outlineBtn}><Icon n="left" />Atrás</button>}
-              <button onClick={paso === 5 ? confirmar : siguiente} disabled={!!falta} aria-describedby={falta ? 'falta' : undefined} className={solidBtn}>
+              <button onClick={paso === TOTAL_PASOS ? confirmar : siguiente} disabled={!!falta} aria-describedby={falta ? 'falta' : undefined} className={solidBtn}>
                 {primario}<Icon n="arrow" />
               </button>
             </div>
@@ -123,12 +120,12 @@ function Flujo({ t }: { t: Tramite }) {
 function Progreso({ paso }: { paso: Paso }) {
   return (
     <div className="mt-3 max-w-3xl lg:mt-4">
-      <p className="t-sub font-semibold text-[#1F2933]">Paso {paso} de 5 · {PASOS[paso]}</p>
-      <div role="progressbar" aria-valuemin={0} aria-valuemax={5} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de 5: ${PASOS[paso]}`} aria-label="Avance del agendado" className="mt-2 h-2 rounded-full bg-[#EBF4FC]">
+      <p className="t-sub font-semibold text-[#1F2933]">Paso {paso} de {TOTAL_PASOS} · {PASOS[paso]}</p>
+      <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}: ${PASOS[paso]}`} aria-label="Avance del agendado" className="mt-2 h-2 rounded-full bg-[#EBF4FC]">
         <div className="h-full rounded-full bg-[#005BB0] transition-[width]" style={{ width: `${avance(paso)}%` }} />
       </div>
-      <ol className="mt-2 hidden grid-cols-5 gap-2 t-meta sm:grid" aria-hidden="true">
-        {([1, 2, 3, 4, 5] as Paso[]).map((p) => (
+      <ol className="mt-2 hidden grid-cols-4 gap-2 t-meta sm:grid" aria-hidden="true">
+        {LISTA_PASOS.map((p) => (
           <li key={p} className={p === paso ? 'font-semibold text-[#005BB0]' : p < paso ? 'text-[#43474A]' : 'text-[#5B6B7A]'}>{p}. {PASOS[p]}</li>
         ))}
       </ol>
@@ -211,91 +208,7 @@ function PasoFecha({ t }: { t: Tramite }) {
     onHora={(h) => update((x) => ({ ...x, hora: h }))} />
 }
 
-/* ---------- paso 4: identificación ---------- */
-function ErrorCampo({ id, children }: { id: string; children: ReactNode }) {
-  return <p id={id} role="alert" className="mt-2 flex items-start gap-2 t-body font-semibold text-[#B3261E]"><Icon n="alert" className="mt-0.5" />{children}</p>
-}
-
-function PasoIdentificacion({ t }: { t: Tramite }) {
-  const { update, toast } = useApp()
-  // si el número ya se conoce (p. ej. llegó por WhatsApp), se precarga: no se vuelve a pedir
-  const [tel, setTel] = useState(() => (t.paciente.whatsapp ?? '').replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3'))
-  const [telErr, setTelErr] = useState<string | null>(null)
-  const [code, setCode] = useState('')
-  const [codeErr, setCodeErr] = useState<string | null>(null)
-  const p = t.paciente
-
-  const enviar = () => {
-    const d = tel.replace(/\D/g, '')
-    if (d.length !== 10) {
-      setTelErr(d.length ? `Tu número debe tener 10 dígitos; escribiste ${d.length}. Ej. 667 123 4567.` : 'Escribe tu número de WhatsApp de 10 dígitos. Ej. 667 123 4567.')
-      return
-    }
-    setTelErr(null)
-    setCode('')
-    update((x) => conEvento({ ...x, paciente: { ...x.paciente, whatsapp: d, verificado: false, codigoEnviado: true } }, 'paciente.codigo_enviado', `Código enviado por WhatsApp a ${ultimos4(d)} (demo)`))
-  }
-  const verificar = () => {
-    const c = code.replace(/\D/g, '')
-    if (c.length !== 6) { setCodeErr('El código tiene 6 dígitos.'); return }
-    if (c !== CODIGO_DEMO) { setCodeErr('El código no coincide. Revísalo e intenta de nuevo.'); return }
-    setCodeErr(null)
-    update((x) => conEvento({ ...x, paciente: { ...x.paciente, verificado: true } }, 'paciente.verificado', `WhatsApp ${ultimos4(x.paciente.whatsapp)} verificado`))
-  }
-  const otroNumero = () => { setTel(''); setCode(''); setCodeErr(null); update((x) => ({ ...x, paciente: { ...x.paciente, whatsapp: null, verificado: false, codigoEnviado: false } })) }
-
-  if (p.verificado) {
-    return (
-      <div role="status" className="flex flex-col gap-1 rounded-lg bg-[#EBF4FC] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-center gap-2 t-body text-[#1F2933]"><Icon n="check" className="text-[#005BB0]" />Número verificado: <strong className="font-bold">{ultimos4(p.whatsapp)}</strong></p>
-        <button onClick={otroNumero} className={link}>Usar otro número</button>
-      </div>
-    )
-  }
-
-  if (!codigoEnviado(t)) {
-    return (
-      <div>
-        <label htmlFor="wa" className="text-base font-semibold text-[#1F2933]">Número de WhatsApp</label>
-        <p id="wa-h" className="t-meta text-[#5B6B7A]">10 dígitos, sin +52. Ahí te enviaremos un código y los detalles de tu cita.</p>
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start">
-          <div className="sm:w-80">
-          <input id="wa" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} value={tel}
-            onChange={(e) => { setTel(e.target.value); if (telErr) setTelErr(null) }}
-            onKeyDown={(e) => e.key === 'Enter' && enviar()}
-            aria-invalid={!!telErr} aria-describedby={telErr ? 'wa-h wa-e' : 'wa-h'} placeholder="Ej. 667 123 4567" className={fieldInput} />
-          {telErr && <ErrorCampo id="wa-e">{telErr}</ErrorCampo>}
-          </div>
-          <button onClick={enviar} className={outlineBtn}><Icon n="chat" />Enviar código</button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <p role="status" className="t-body text-[#1F2933]">Enviamos un código de 6 dígitos a tu WhatsApp <strong className="font-bold">{ultimos4(p.whatsapp)}</strong>.</p>
-      <div className="mt-1 flex flex-wrap gap-x-6">
-        <button onClick={otroNumero} className={link}>Cambiar número</button>
-        <button onClick={() => toast('Código reenviado (demo)')} className={link}>Reenviar código</button>
-      </div>
-      <label htmlFor="otp" className="mt-4 block text-base font-semibold text-[#1F2933]">Código de verificación</label>
-      <p id="otp-h" className="mt-1 inline-block rounded-md bg-[#EBF4FC] px-3 py-1 t-meta font-semibold text-[#1F2933]">Código de demostración: {CODIGO_DEMO}</p>
-      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="sm:w-80">
-        <input id="otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code}
-          onChange={(e) => { setCode(e.target.value.replace(/\D/g, '')); if (codeErr) setCodeErr(null) }}
-          onKeyDown={(e) => e.key === 'Enter' && verificar()}
-          aria-invalid={!!codeErr} aria-describedby={codeErr ? 'otp-h otp-e' : 'otp-h'} placeholder="6 dígitos" className={`${fieldInput} font-mono tracking-widest`} />
-        {codeErr && <ErrorCampo id="otp-e">{codeErr}</ErrorCampo>}
-        </div>
-        <button onClick={verificar} className={outlineBtn}><Icon n="check" />Verificar código</button>
-      </div>
-    </div>
-  )
-}
-
-/* ---------- paso 5: resumen editable + pago ---------- */
+/* ---------- paso 4: resumen editable + pago ---------- */
 const OPCIONES: [MetodoPago, string][] = [
   ['en_linea', 'Con tarjeta de débito o crédito. En esta demo el cobro es simulado.'],
   ['oxxo', 'Te damos una referencia para pagar en efectivo en cualquier Oxxo.'],
@@ -310,7 +223,6 @@ function Resumen({ t, onCambiar }: { t: Tramite; onCambiar?: (p: Paso) => void }
       ? <>{c.name}<span className="block t-meta font-normal text-[#5B6B7A]">{c.address} · Tel.{NB}{c.phone}</span></>
       : <span className="inline-flex items-center gap-2 rounded-full bg-[#FDF1DB] px-3 py-1 t-meta font-semibold text-[#7A4E00]"><span aria-hidden="true" className="size-2 rounded-full bg-[#F2A00D]" />Clínica pendiente</span>],
     [3, 'Fecha y hora', t.fecha ? <span className="first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}<span className="block t-meta font-normal text-[#5B6B7A]">Horario de demostración</span></span> : '—'],
-    [4, 'WhatsApp', <>{ultimos4(t.paciente.whatsapp)}{t.paciente.verificado && <span className="block t-meta font-normal text-[#5B6B7A]">Verificado</span>}</>],
   ]
   return (
     <dl className="divide-y divide-[#D6E4F5]">
@@ -364,7 +276,7 @@ function Confirmada({ t }: { t: Tramite }) {
           <Icon n="check" size={36} />Cita confirmada
         </h1>
         <p role="status" className="mt-2 t-body text-[#1F2933]">
-          Te enviamos los detalles a tu WhatsApp {ultimos4(t.paciente.whatsapp)} (demo). {t.metodoPago === 'en_clinica' ? 'Pagas en recepción el día de tu cita.' : 'Pago en línea simulado: no se hizo ningún cobro.'}
+          Guardamos los detalles en Mis trámites. {t.metodoPago === 'en_clinica' ? 'Pagas en recepción el día de tu cita.' : 'Pago en línea simulado: no se hizo ningún cobro.'}
         </p>
         <section aria-labelledby="conf-t" className="mt-6 rounded-2xl border border-[#D6E4F5] bg-white p-6">
           <h2 id="conf-t" className="t-sub font-bold text-[#1F2933]">Detalles de tu cita</h2>

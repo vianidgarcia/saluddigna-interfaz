@@ -10,7 +10,7 @@ export const FOOT: Record<string, string[]> = {
   Empresas: ['Convenios', 'Chequeos empresariales', 'Contacto'],
 }
 export function Footer() {
-  const { toast, simularWhatsApp, reiniciarDemo } = useApp()
+  const { toast, simularWhatsApp, reiniciarDemo, sesion } = useApp()
   const [confirmar, setConfirmar] = useState(false)
   const small = 'inline-flex min-h-12 items-center gap-2 rounded-md text-[#5B6B7A] hover:text-[#005BB0] hover:underline'
   return (
@@ -31,7 +31,7 @@ export function Footer() {
           </div>
           <p className="text-[#5B6B7A]">© Salud Digna</p>
         </div>
-        <section aria-label="Controles de la demostración" className="flex flex-col gap-x-6 border-t border-[#D6E4F5] py-2 t-meta lg:flex-row lg:items-center">
+        {sesion && <section aria-label="Controles de la demostración" className="flex flex-col gap-x-6 border-t border-[#D6E4F5] py-2 t-meta lg:flex-row lg:items-center">
           <button onClick={simularWhatsApp} className={small}><Icon n="chat" size={18} />Demo: simular regreso por WhatsApp</button>
           {!confirmar
             ? <button onClick={() => setConfirmar(true)} className={small}><Icon n="refresh" size={18} />Reiniciar demo</button>
@@ -42,7 +42,7 @@ export function Footer() {
                 <button onClick={() => setConfirmar(false)} className="inline-flex min-h-12 items-center rounded-md font-semibold text-[#005BB0] underline underline-offset-4">Cancelar</button>
               </div>
             )}
-        </section>
+        </section>}
       </div>
     </footer>
   )

@@ -14,7 +14,7 @@ import { Agendar } from './views/Agendar'
 import { Entrar } from './views/Entrar'
 import { Asesor } from './views/Asesor'
 import { StaffHeader } from './components/StaffHeader'
-import { loadSesion, saveSesion, type Sesion } from './state/sesion'
+import { loadSesion, saveSesion, type Rol, type Sesion } from './state/sesion'
 import { PASOS, STORAGE_KEY, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
 
 const VIEW_KEY = 'sd_vista'
@@ -37,6 +37,11 @@ export default function App() {
   const [tramite, setTramite] = useState<Tramite | null>(loadTramite)
   const tRef = useRef(tramite)
   const [sesion, setSesion] = useState<Sesion | null>(loadSesion)
+  const sesionRef = useRef(sesion)
+  // visitante: pantalla Entrar abierta (con el rol elegido en la esquina superior derecha)
+  const [entrar, setEntrar] = useState<{ rol: Rol; motivo?: string } | null>(null)
+  // acción que el visitante intentó antes de iniciar sesión; se completa al entrar como paciente
+  const pendiente = useRef<(() => void) | null>(null)
 
   // Otra pestaña (p. ej. el Asesor) cambió el trámite: se refleja aquí sin recargar.
   // La sesión NO se sincroniza: cada pestaña conserva su propio rol.
@@ -61,7 +66,19 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const timer = useRef<number | undefined>(undefined)
 
+  const abrirEntrar = (rol: Rol = 'paciente', motivo?: string) => { setEntrar({ rol, motivo }); window.scrollTo(0, 0) }
+  const PRIVADAS: Partial<Record<View, string>> = {
+    tramites: 'Inicia sesión para ver tus trámites.',
+    resultados: 'Inicia sesión para consultar tus resultados.',
+    agendar: 'Inicia sesión para agendar tu cita.',
+    pay: 'Inicia sesión para ver tu pago.',
+  }
   const go = (v: View) => {
+    if (!sesionRef.current && PRIVADAS[v]) {
+      pendiente.current = () => go(v)
+      abrirEntrar('paciente', PRIVADAS[v])
+      return
+    }
     setView(v)
     try { window.sessionStorage.setItem(VIEW_KEY, v) } catch { /* sin almacenamiento */ }
     window.scrollTo(0, 0)
@@ -81,8 +98,14 @@ export default function App() {
   const update = (fn: (t: Tramite) => Tramite) => { if (tRef.current) commit(fn(tRef.current)) }
 
   const startAgendar = (estudio?: EstudioElegido) => {
+    const s = sesionRef.current
+    if (!s) {
+      pendiente.current = () => startAgendar(estudio)
+      abrirEntrar('paciente', estudio ? `Inicia sesión para agendar ${estudio.nombre}.` : 'Inicia sesión para agendar tu cita.')
+      return
+    }
     let t = tRef.current
-    if (!t || t.estado === 'confirmada') t = nuevoTramite('web')
+    if (!t || t.estado === 'confirmada') t = nuevoTramite('web', { nombre: s.nombre, cuenta: s.correo })
     if (estudio) {
       // estudio preseleccionado: al continuar se salta al primer dato que falte
       t = { ...t, estudio, paso: 1, estado: 'en_curso', metodoPago: t.estado === 'pago_pendiente' ? null : t.metodoPago, desdeResumen: true }
@@ -94,6 +117,7 @@ export default function App() {
   }
 
   const continuar = () => {
+    if (!sesionRef.current) { pendiente.current = () => continuar(); abrirEntrar('paciente', 'Inicia sesión para continuar tu trámite.'); return }
     const t = tRef.current
     if (!t) return startAgendar()
     if (t.estado === 'confirmada') return go('tramites')
@@ -103,12 +127,8 @@ export default function App() {
   }
 
   const simularWhatsApp = () => {
-    let t = tRef.current
+    const t = tRef.current
     if (!t) { toast('Primero agenda una cita para simular el regreso por WhatsApp'); return }
-    // el chat de WhatsApp ya trae el número: se guarda para no volver a pedirlo (número de demostración)
-    if (!t.paciente.whatsapp) {
-      t = conEvento({ ...t, paciente: { ...t.paciente, whatsapp: '6671234567', codigoEnviado: false } }, 'paciente.whatsapp_identificado', 'El número llegó con el chat de WhatsApp ••• 4567 (número de demostración)', 'whatsapp')
-    }
     commit(conEvento(t, 'canal.mensaje_recibido', 'Escribió por WhatsApp “¿Cómo va mi cita?” y el asistente respondió con su avance (demo)', 'whatsapp'))
     go('home')
     toast('Demo: se registró un mensaje por WhatsApp')
@@ -120,19 +140,33 @@ export default function App() {
     toast('Demo reiniciada: no hay trámites en curso')
   }
 
-  const entrarComo = (s: Sesion) => { saveSesion(s); setSesion(s); go('home') }
-  const salir = () => { saveSesion(null); setSesion(null); go('home') }
+  const entrarComo = (s: Sesion) => {
+    saveSesion(s); sesionRef.current = s; setSesion(s); setEntrar(null)
+    setView('home'); window.scrollTo(0, 0)
+    const accion = pendiente.current
+    pendiente.current = null
+    if (s.rol === 'paciente' && accion) accion()
+  }
+  const salir = () => {
+    saveSesion(null); sesionRef.current = null; setSesion(null); setEntrar(null); pendiente.current = null
+    setView('home')
+    try { window.sessionStorage.setItem(VIEW_KEY, 'home') } catch { /* sin almacenamiento */ }
+    window.scrollTo(0, 0)
+  }
 
-  const ctx: AppCtx = { go, toast, openClinics: () => setSheet(true), scrollToId, tramite, update, startAgendar, continuar, simularWhatsApp, reiniciarDemo, sesion, salir }
+  const ctx: AppCtx = { go, toast, openClinics: () => setSheet(true), scrollToId, tramite, update, startAgendar, continuar, simularWhatsApp, reiniciarDemo, sesion, salir, abrirEntrar }
   const toastEl = (
     <div role="status" aria-live="polite" className="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 lg:bottom-8">
       {toastMsg && <div className="rounded-lg bg-[#1F2933] px-5 py-3 text-base text-white shadow-lg">{toastMsg}</div>}
     </div>
   )
 
-  if (!sesion) return <Entrar onEntrar={entrarComo} />
+  if (!sesion && entrar) {
+    return <Entrar key={entrar.rol + (entrar.motivo ?? '')} rolInicial={entrar.rol} motivo={entrar.motivo} onEntrar={entrarComo}
+      onVolver={() => { pendiente.current = null; setEntrar(null); window.scrollTo(0, 0) }} />
+  }
 
-  if (sesion.rol !== 'paciente') {
+  if (sesion && sesion.rol !== 'paciente') {
     return (
       <Ctx.Provider value={ctx}>
         <div className="flex min-h-screen flex-col bg-white">
@@ -146,7 +180,7 @@ export default function App() {
     )
   }
 
-  const activeView: View = (view === 'agendar' && !tramite) ? 'home' : view
+  const activeView: View = !sesion && PRIVADAS[view] ? 'home' : (view === 'agendar' && !tramite) ? 'home' : view
   return (
     <Ctx.Provider value={ctx}>
       <div className="flex min-h-screen flex-col pb-16 lg:pb-0">

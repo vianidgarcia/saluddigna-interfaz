@@ -3,7 +3,7 @@ import { useApp } from '../context'
 import { Back } from '../components/Back'
 import { Icon } from '../components/Icon'
 import { WA, NB, container, outlineBtn, link, solidBtn } from '../components/ui'
-import { avance, conEvento, fechaLarga } from '../state/tramite'
+import { TOTAL_PASOS, avance, conEvento, fechaLarga } from '../state/tramite'
 
 /** Referencia de ejemplo de 16 dígitos, estable para cada trámite. */
 function referencia(id: string) {
@@ -38,19 +38,19 @@ export function Pay() {
     window.setTimeout(() => setCopied(false), 3000)
   }
   const cambiarMetodo = () => {
-    update((x) => conEvento({ ...x, estado: 'en_curso', metodoPago: null, paso: 5 }, 'pago.metodo_cambiado', 'Regresó a elegir otro método de pago'))
+    update((x) => conEvento({ ...x, estado: 'en_curso', metodoPago: null, paso: TOTAL_PASOS }, 'pago.metodo_cambiado', 'Regresó a elegir otro método de pago'))
     go('agendar')
   }
   const waText = encodeURIComponent(`Hola, esta es mi referencia de pago en Oxxo para el trámite ${t.id}: ${REF.replace(/ /g, '')}`)
   return (
     <div className={`${container} py-8 lg:py-12`}>
       <Back />
-      <h1 className="mt-4 t-greeting font-head text-[#1F2933]">Paso 5 de 5 · Paga en{NB}Oxxo</h1>
+      <h1 className="mt-4 t-greeting font-head text-[#1F2933]">Paso {TOTAL_PASOS} de {TOTAL_PASOS} · Paga en{NB}Oxxo</h1>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <p className="t-body text-[#1F2933]">{t.estudio?.nombre} · {t.clinica}</p>
         <span className="inline-flex items-center gap-2 rounded-full bg-[#FDF1DB] px-3 py-1 t-meta font-semibold text-[#7A4E00]"><span aria-hidden="true" className="size-2 rounded-full bg-[#F2A00D]" />Pago pendiente</span>
       </div>
-      <div role="progressbar" aria-valuemin={0} aria-valuemax={5} aria-valuenow={5} aria-valuetext="Paso 5 de 5: pago pendiente" aria-label="Avance del trámite" className="mt-6 h-2 max-w-xl rounded-full bg-[#EBF4FC]"><div className="h-full rounded-full bg-[#005BB0]" style={{ width: `${avance(5)}%` }} /></div>
+      <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={TOTAL_PASOS} aria-valuetext={`Paso ${TOTAL_PASOS} de ${TOTAL_PASOS}: pago pendiente`} aria-label="Avance del trámite" className="mt-6 h-2 max-w-xl rounded-full bg-[#EBF4FC]"><div className="h-full rounded-full bg-[#005BB0]" style={{ width: `${avance(TOTAL_PASOS)}%` }} /></div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-12">
         <section aria-labelledby="ref-t" className="rounded-2xl border border-[#D6E4F5] bg-white p-6 shadow-[0_8px_24px_-4px_rgba(0,68,128,0.16)] lg:col-span-7 lg:p-8">

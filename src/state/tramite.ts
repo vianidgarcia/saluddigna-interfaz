@@ -2,7 +2,9 @@
 
 export type Canal = 'web' | 'whatsapp' | 'call_center' | 'clinica'
 export type MetodoPago = 'en_linea' | 'oxxo' | 'en_clinica'
-export type Paso = 1 | 2 | 3 | 4 | 5
+export type Paso = 1 | 2 | 3 | 4
+export const TOTAL_PASOS = 4
+export const LISTA_PASOS: Paso[] = [1, 2, 3, 4]
 export type Estado = 'en_curso' | 'pago_pendiente' | 'confirmada'
 
 export type Evento = { tipo: string; canal: Canal; fecha: string; detalle: string }
@@ -15,12 +17,12 @@ export type Tramite = {
   clinicaPendiente: boolean
   fecha: string | null // AAAA-MM-DD
   hora: string | null // HH:MM
-  /** codigoEnviado: ya se mandó un código y se espera que el paciente lo escriba */
-  paciente: { nombre: string; whatsapp: string | null; verificado: boolean; codigoEnviado?: boolean }
+  /** el paciente se identifica por su cuenta del portal (sesión), no por número de teléfono */
+  paciente: { nombre: string; cuenta: string }
   metodoPago: MetodoPago | null
   paso: Paso
   estado: Estado
-  /** el paciente entró a editar un dato desde el resumen del paso 5 */
+  /** el paciente entró a editar un dato desde el resumen del último paso */
   desdeResumen: boolean
   canalInicio: Canal
   ultimoCanal: Canal
@@ -34,8 +36,7 @@ export const PASOS: Record<Paso, string> = {
   1: 'Estudio',
   2: 'Clínica',
   3: 'Fecha y hora',
-  4: 'Identificación',
-  5: 'Pago',
+  4: 'Pago',
 }
 
 export const CANAL: Record<Canal, string> = {
@@ -56,7 +57,14 @@ export function loadTramite(): Tramite | null {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const t = JSON.parse(raw) as Tramite
-    return t && t.id && Array.isArray(t.eventos) ? t : null
+    if (!t || !t.id || !Array.isArray(t.eventos)) return null
+    // trámites guardados con la versión de 5 pasos (incluía identificación por WhatsApp)
+    const viejo = t as unknown as { paso: number; paciente: { nombre?: string; cuenta?: string } }
+    return {
+      ...t,
+      paso: Math.min(Math.max(viejo.paso, 1), TOTAL_PASOS) as Paso,
+      paciente: { nombre: viejo.paciente?.nombre ?? 'Ana', cuenta: viejo.paciente?.cuenta ?? 'ana@demo.mx' },
+    }
   } catch {
     return null
   }
@@ -71,7 +79,7 @@ export function saveTramite(t: Tramite | null) {
   }
 }
 
-export function nuevoTramite(canal: Canal = 'web'): Tramite {
+export function nuevoTramite(canal: Canal = 'web', paciente = { nombre: 'Ana', cuenta: 'ana@demo.mx' }): Tramite {
   const now = new Date().toISOString()
   return {
     id: 'SD-' + Date.now().toString(36).toUpperCase(),
@@ -80,7 +88,7 @@ export function nuevoTramite(canal: Canal = 'web'): Tramite {
     clinicaPendiente: false,
     fecha: null,
     hora: null,
-    paciente: { nombre: 'Ana', whatsapp: null, verificado: false },
+    paciente,
     metodoPago: null,
     paso: 1,
     estado: 'en_curso',
@@ -104,8 +112,7 @@ export function pasoCompleto(t: Tramite, p: Paso): boolean {
     case 1: return !!t.estudio
     case 2: return !!t.clinica || t.clinicaPendiente
     case 3: return !!t.fecha && !!t.hora
-    case 4: return t.paciente.verificado
-    case 5: return !!t.metodoPago
+    case 4: return !!t.metodoPago
   }
 }
 
@@ -123,15 +130,12 @@ export function fechaLarga(iso: string): string {
   return new Date(y, m - 1, d).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-export const ultimos4 = (w: string | null) => (w ? '••• ' + w.slice(-4) : '')
-
 /** Qué le falta al paciente en cada paso (tarjeta de continuidad y Mis trámites). */
 export const PENDIENTE: Record<Paso, string> = {
   1: 'Elige tu estudio',
   2: 'Elige tu clínica',
   3: 'Elige fecha y hora',
-  4: 'Confirma tu WhatsApp',
-  5: 'Elige cómo pagar',
+  4: 'Elige cómo pagar',
 }
 
 export const ICONO_CANAL: Record<Canal, string> = { web: 'globe', whatsapp: 'chat', call_center: 'phone', clinica: 'pin' }
@@ -150,8 +154,8 @@ export function clinicaTexto(t: Tramite): string {
 /** Hook para refrescar textos relativos ("hace 2 min"). */
 export const TICK_MS = 30000
 
-/** Relleno de la barra (%): el paso actual cuenta como medio segmento, así el paso 5 no se ve terminado. */
-export const avance = (paso: number) => (paso - 0.5) * 20
+/** Relleno de la barra (%): el paso actual cuenta como medio segmento, así el último paso no se ve terminado. */
+export const avance = (paso: number) => ((paso - 0.5) / TOTAL_PASOS) * 100
 
 /** Eventos que solo ven asesores y administradores. */
 export const esNotaInterna = (e: Evento) => e.tipo === 'nota.interna'
@@ -161,18 +165,12 @@ export function conNota(t: Tramite, texto: string, autor: string): Tramite {
   return { ...t, eventos: [...t.eventos, { tipo: 'nota.interna', canal: 'call_center', fecha: new Date().toISOString(), detalle: `${autor}: ${texto}` }] }
 }
 
-/** ¿Ya se envió un código? (trámites guardados antes de este campo: se infiere del número) */
-export const codigoEnviado = (t: Tramite) => t.paciente.codigoEnviado ?? (!!t.paciente.whatsapp && !t.paciente.verificado)
-
 export const TIPO_EVENTO: Record<string, string> = {
   'tramite.iniciado': 'Trámite iniciado',
   'tramite.paso_completado': 'Paso completado',
   'tramite.paso_regresado': 'Regresó un paso',
   'tramite.dato_editado': 'Editó un dato',
   'tramite.retomado': 'Retomó el trámite',
-  'paciente.whatsapp_identificado': 'Número identificado',
-  'paciente.codigo_enviado': 'Código de verificación enviado',
-  'paciente.verificado': 'Identidad verificada',
   'pago.referencia_generada': 'Referencia de pago generada',
   'pago.referencia_enviada': 'Referencia enviada por WhatsApp',
   'pago.metodo_cambiado': 'Cambió el método de pago',
@@ -188,4 +186,14 @@ export function horaEvento(iso: string): string {
   const d = new Date(iso)
   const hora = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
   return d.toDateString() === new Date().toDateString() ? hora : `${d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).replace('.', '')}, ${hora}`
+}
+
+/* ---------- fechas: nunca en el pasado ---------- */
+export const isoDia = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+export const hoyISO = () => isoDia(new Date())
+/** ¿La fecha (y hora, si se da) ya pasó respecto a este momento? */
+export function yaPaso(fecha: string, hora?: string | null): boolean {
+  const [y, m, d] = fecha.split('-').map(Number)
+  const [hh, mm] = (hora ?? '23:59').split(':').map(Number)
+  return new Date(y, m - 1, d, hh, mm).getTime() <= Date.now()
 }

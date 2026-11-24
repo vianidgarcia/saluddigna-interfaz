@@ -10,8 +10,13 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - `npx tsc --noEmit` para revisar tipos (`vite build` no los revisa).
 
 ## Estructura
-- `src/App.tsx`: estado global (sesión, vista, clínica, trámite) y contexto `useApp`. Sin sesión muestra `Entrar`;
+- `src/App.tsx`: estado global (sesión, vista, clínica, trámite) y contexto `useApp`. Sin sesión muestra la página
+  principal pública; "Iniciar sesión" (esquina superior derecha) abre `Entrar` con el rol elegido. Las acciones
+  privadas (agendar, trámites, resultados, pago) piden iniciar sesión y se completan al entrar como paciente.
   Paciente ve el portal; Asesor y Administrador ven `StaffHeader` + `views/Asesor`.
+- Agendado en 4 pasos (`TOTAL_PASOS`): Estudio, Clínica, Fecha y hora, Pago. El paciente se identifica por su cuenta
+  del portal; por ahora NO se usa el número de teléfono como identificador.
+- Fecha y hora: `SelectorHorario` (calendario + hora/minutos). Nunca permite fechas u horas pasadas (`yaPaso`).
 - `src/components/`: piezas de interfaz (Header, StaffHeader, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, SelectorHorario, Icon, ui).
 - `src/views/`: Entrar, Home, Agendar, Pay, Tramites, Resultados, Asesor (también la usa Administrador).
 - `src/data/`: clinics, studies, packages.

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../context'
-import { avance, CANAL, ICONO_CANAL, TICK_MS, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
+import { TOTAL_PASOS, avance, CANAL, ICONO_CANAL, TICK_MS, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
 import { Icon } from './Icon'
 import { WA } from './ui'
 
@@ -9,18 +9,31 @@ const whiteBtn = 'inline-flex min-h-12 items-center justify-center gap-2 rounded
 const darkLink = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-md px-1 text-base font-semibold text-white underline underline-offset-4 hover:bg-white/10 active:bg-white/20'
 
 export function ContinueCard() {
-  const { tramite: t, continuar, startAgendar } = useApp()
+  const { tramite: t, continuar, startAgendar, sesion, abrirEntrar } = useApp()
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), TICK_MS)
     return () => window.clearInterval(id)
   }, [])
 
+  if (!sesion) {
+    return (
+      <section aria-labelledby="continua" className={card}>
+        <h2 id="continua" className="font-head t-card text-white">Una sola conversación, en todos tus canales</h2>
+        <p className="mt-3 t-body text-white">Inicia sesión para agendar tus estudios y retomar tus trámites donde te quedaste: en la web, por WhatsApp o con nuestro Call Center.</p>
+        <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6 lg:mt-auto lg:pt-8">
+          <button onClick={() => abrirEntrar('paciente')} className={whiteBtn}><Icon n="user" />Iniciar sesión</button>
+          <a href={WA} target="_blank" rel="noopener" className={darkLink}><Icon n="chat" />Escríbenos por WhatsApp</a>
+        </div>
+      </section>
+    )
+  }
+
   if (!t) {
     return (
       <section aria-labelledby="continua" className={card}>
         <h2 id="continua" className="font-head t-card text-white">Agenda tu próximo estudio</h2>
-        <p className="mt-3 t-body text-white">Aún no tienes trámites en curso. Agenda en 5 pasos; si te interrumpes, aquí retomas donde te quedaste, desde la web o por WhatsApp.</p>
+        <p className="mt-3 t-body text-white">Aún no tienes trámites en curso. Agenda en 4 pasos; si te interrumpes, aquí retomas donde te quedaste, desde la web o por WhatsApp.</p>
         <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6 lg:mt-auto lg:pt-8">
           <button onClick={() => startAgendar()} className={whiteBtn}><Icon n="calendar" />Agendar cita</button>
           <a href={WA} target="_blank" rel="noopener" className={darkLink}><Icon n="chat" />Agendar por WhatsApp</a>
@@ -30,7 +43,7 @@ export function ContinueCard() {
   }
 
   const confirmada = t.estado === 'confirmada'
-  const paso = t.estado === 'pago_pendiente' ? 5 : t.paso
+  const paso = t.estado === 'pago_pendiente' ? TOTAL_PASOS : t.paso
   const waText = encodeURIComponent(`Hola, quiero continuar mi trámite ${t.id}`)
   return (
     <section aria-labelledby="continua" className={card}>
@@ -44,8 +57,8 @@ export function ContinueCard() {
       </div>
       {!confirmada && (
         <div className="mt-8">
-          <p className="t-sub">Paso {paso} de 5</p>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={5} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de 5`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-white/25">
+          <p className="t-sub">Paso {paso} de {TOTAL_PASOS}</p>
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-white/25">
             <div className="h-full rounded-full bg-white transition-[width]" style={{ width: `${avance(paso)}%` }} />
           </div>
         </div>
