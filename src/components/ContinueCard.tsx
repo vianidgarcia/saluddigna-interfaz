@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../context'
-import { CANAL, ICONO_CANAL, TICK_MS, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
+import { avance, CANAL, ICONO_CANAL, TICK_MS, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
 import { Icon } from './Icon'
 import { WA } from './ui'
 
@@ -46,7 +46,7 @@ export function ContinueCard() {
         <div className="mt-8">
           <p className="t-sub">Paso {paso} de 5</p>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={5} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de 5`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-white/25">
-            <div className="h-full rounded-full bg-white transition-[width]" style={{ width: `${paso * 20}%` }} />
+            <div className="h-full rounded-full bg-white transition-[width]" style={{ width: `${avance(paso)}%` }} />
           </div>
         </div>
       )}

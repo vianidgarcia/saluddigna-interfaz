@@ -148,3 +148,6 @@ export function clinicaTexto(t: Tramite): string {
 
 /** Hook para refrescar textos relativos ("hace 2 min"). */
 export const TICK_MS = 30000
+
+/** Relleno de la barra (%): el paso actual cuenta como medio segmento, así el paso 5 no se ve terminado. */
+export const avance = (paso: number) => (paso - 0.5) * 20

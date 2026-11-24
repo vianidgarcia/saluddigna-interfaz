@@ -6,7 +6,7 @@ import { CHIPS, STUDIES } from '../data/studies'
 import { clinicasPorDistancia, findClinic } from '../data/clinics'
 import { NB, WA, container, chip, link, outlineBtn, solidBtn } from '../components/ui'
 import {
-  METODO, PASOS, conEvento, fechaLarga, pasoCompleto, ultimos4,
+  METODO, PASOS, avance, conEvento, fechaLarga, pasoCompleto, ultimos4,
   type MetodoPago, type Paso, type Tramite,
 } from '../state/tramite'
 
@@ -20,7 +20,7 @@ const PREGUNTA: Record<Paso, string> = {
 const CODIGO_DEMO = '123456'
 const optionRow = 'flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition-colors has-[:checked]:border-[#005BB0] has-[:checked]:bg-[#EBF4FC]'
 const radio = 'mt-0.5 size-5 shrink-0 accent-[#005BB0]'
-const fieldInput = 'h-12 w-full rounded-lg border border-[#D6E4F5] bg-white px-4 text-base text-[#1F2933] transition-colors hover:border-[#0074D9] aria-[invalid=true]:border-[#B3261E]'
+const fieldInput = 'h-12 w-full rounded-lg border border-[#D6E4F5] bg-white px-4 text-base text-[#1F2933] transition-colors hover:border-[#0074D9] aria-[invalid=true]:border-2 aria-[invalid=true]:border-[#B3261E]'
 
 export function Agendar() {
   const { tramite } = useApp()
@@ -71,17 +71,31 @@ function Flujo({ t }: { t: Tramite }) {
   if (paso === 3 && !t.fecha) falta = 'Elige un día para ver los horarios.'
   if (paso === 3 && t.fecha && !t.hora) falta = 'Elige un horario para continuar.'
   if (paso === 4 && !t.paciente.verificado) falta = t.paciente.whatsapp ? 'Escribe el código que te enviamos para continuar.' : 'Verifica tu número de WhatsApp para continuar.'
+  if (paso === 5) falta = !t.clinica ? 'Elige una clínica para confirmar tu cita (toca “Cambiar” en Clínica).' : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
+
+  const confirmar = () => {
+    if (t.metodoPago === 'oxxo') {
+      update((x) => conEvento({ ...x, estado: 'pago_pendiente', desdeResumen: false }, 'pago.referencia_generada', 'Referencia de pago en Oxxo generada (demo)'))
+      go('pay')
+      return
+    }
+    update((x) => conEvento({ ...x, estado: 'confirmada', desdeResumen: false }, 'cita.confirmada', `${METODO[x.metodoPago!]} · ${x.fecha ? fechaLarga(x.fecha) : ''} ${x.hora ?? ''}`))
+    window.scrollTo(0, 0)
+  }
+  const primario = paso === 5
+    ? (t.metodoPago === 'oxxo' ? 'Generar referencia de pago' : 'Confirmar cita')
+    : t.desdeResumen ? 'Guardar y continuar' : 'Continuar'
 
   return (
-    <div className={`${container} py-8 lg:py-12`}>
+    <div className={`${container} py-4 lg:py-12`}>
       <Back />
-      <h1 className="mt-4 t-section font-head text-[#1F2933]">Agendar cita</h1>
+      <h1 className="mt-2 t-section font-head text-[#1F2933] lg:mt-4">Agendar cita</h1>
       <Progreso paso={paso} />
-      <div className="mt-8 max-w-3xl">
+      <div className="mt-6 max-w-3xl lg:mt-8">
         <h2 ref={headRef} tabIndex={-1} data-focus-target className="t-card font-head text-[#1F2933]">
           <span className="sr-only">Paso {paso} de 5: </span>{PREGUNTA[paso]}
         </h2>
-        <p className="mt-1 t-meta text-[#5B6B7A]">Guardamos tu avance en cada paso. Si te interrumpes, retómalo desde el inicio o por WhatsApp.</p>
+        {paso === 1 && <p className="mt-1 t-meta text-[#5B6B7A]">Guardamos tu avance en cada paso. Si te interrumpes, retómalo desde el inicio o por WhatsApp.</p>}
         <div className="mt-6">
           {paso === 1 && <PasoEstudio t={t} />}
           {paso === 2 && <PasoClinica t={t} />}
@@ -89,24 +103,17 @@ function Flujo({ t }: { t: Tramite }) {
           {paso === 4 && <PasoIdentificacion t={t} />}
           {paso === 5 && <PasoPago t={t} onCambiar={cambiar} />}
         </div>
-        {paso < 5 && (
-          <div className="mt-8 border-t border-[#D6E4F5] pt-6">
+        <div className="mt-8 border-t border-[#D6E4F5] pt-6">
             {falta && <p id="falta" className="mb-3 t-body text-[#43474A]">{falta}</p>}
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               {paso > 1
                 ? <button onClick={atras} className={outlineBtn}><Icon n="left" />Atrás</button>
                 : <button onClick={() => go('home')} className={outlineBtn}><Icon n="left" />Atrás</button>}
-              <button onClick={siguiente} disabled={!!falta} aria-describedby={falta ? 'falta' : undefined} className={solidBtn}>
-                {t.desdeResumen ? 'Guardar y continuar' : 'Continuar'}<Icon n="arrow" />
+              <button onClick={paso === 5 ? confirmar : siguiente} disabled={!!falta} aria-describedby={falta ? 'falta' : undefined} className={solidBtn}>
+                {primario}<Icon n="arrow" />
               </button>
             </div>
-          </div>
-        )}
-        {paso === 5 && (
-          <div className="mt-8 border-t border-[#D6E4F5] pt-6">
-            <button onClick={atras} className={outlineBtn}><Icon n="left" />Atrás</button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
@@ -114,10 +121,10 @@ function Flujo({ t }: { t: Tramite }) {
 
 function Progreso({ paso }: { paso: Paso }) {
   return (
-    <div className="mt-4 max-w-3xl">
+    <div className="mt-3 max-w-3xl lg:mt-4">
       <p className="t-sub font-semibold text-[#1F2933]">Paso {paso} de 5 · {PASOS[paso]}</p>
       <div role="progressbar" aria-valuemin={0} aria-valuemax={5} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de 5: ${PASOS[paso]}`} aria-label="Avance del agendado" className="mt-2 h-2 rounded-full bg-[#EBF4FC]">
-        <div className="h-full rounded-full bg-[#005BB0] transition-[width]" style={{ width: `${paso * 20}%` }} />
+        <div className="h-full rounded-full bg-[#005BB0] transition-[width]" style={{ width: `${avance(paso)}%` }} />
       </div>
       <ol className="mt-2 hidden grid-cols-5 gap-2 t-meta sm:grid" aria-hidden="true">
         {([1, 2, 3, 4, 5] as Paso[]).map((p) => (
@@ -212,14 +219,14 @@ function PasoFecha({ t }: { t: Tramite }) {
   return (
     <>
       <p id="dia-l" className="text-base font-semibold text-[#1F2933]">Día</p>
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7" role="group" aria-labelledby="dia-l">
+      <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-7" role="group" aria-labelledby="dia-l">
         {dias.map((d) => {
           const v = iso(d)
           const on = t.fecha === v
           return (
             <button key={v} onClick={() => update((x) => ({ ...x, fecha: v, hora: x.fecha === v ? x.hora : null }))} aria-pressed={on}
               aria-label={fechaLarga(v)}
-              className={`min-h-14 rounded-lg border px-2 py-2 text-center transition-colors ${on ? 'border-[#005BB0] bg-[#EBF4FC] text-[#005BB0]' : 'border-[#D6E4F5] bg-white text-[#1F2933] hover:border-[#0074D9] hover:bg-[#EBF4FC]'}`}>
+              className={`min-h-14 rounded-lg border px-1 py-2 text-center transition-colors ${on ? 'border-[#005BB0] bg-[#EBF4FC] text-[#005BB0]' : 'border-[#D6E4F5] bg-white text-[#1F2933] hover:border-[#0074D9] hover:bg-[#EBF4FC]'}`}>
               <span className="block t-meta capitalize">{d.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')}</span>
               <span className="block text-base font-semibold">{d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).replace('.', '')}</span>
             </button>
@@ -251,6 +258,10 @@ function PasoFecha({ t }: { t: Tramite }) {
 }
 
 /* ---------- paso 4: identificación ---------- */
+function ErrorCampo({ id, children }: { id: string; children: ReactNode }) {
+  return <p id={id} role="alert" className="mt-2 flex items-start gap-2 t-body font-semibold text-[#B3261E]"><Icon n="alert" className="mt-0.5" />{children}</p>
+}
+
 function PasoIdentificacion({ t }: { t: Tramite }) {
   const { update, toast } = useApp()
   const [tel, setTel] = useState('')
@@ -292,14 +303,16 @@ function PasoIdentificacion({ t }: { t: Tramite }) {
       <div>
         <label htmlFor="wa" className="text-base font-semibold text-[#1F2933]">Número de WhatsApp</label>
         <p id="wa-h" className="t-meta text-[#5B6B7A]">10 dígitos, sin +52. Ahí te enviaremos un código y los detalles de tu cita.</p>
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start">
+          <div className="sm:w-80">
           <input id="wa" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} value={tel}
             onChange={(e) => { setTel(e.target.value); if (telErr) setTelErr(null) }}
             onKeyDown={(e) => e.key === 'Enter' && enviar()}
-            aria-invalid={!!telErr} aria-describedby={telErr ? 'wa-h wa-e' : 'wa-h'} placeholder="Ej. 667 123 4567" className={`${fieldInput} sm:max-w-xs`} />
+            aria-invalid={!!telErr} aria-describedby={telErr ? 'wa-h wa-e' : 'wa-h'} placeholder="Ej. 667 123 4567" className={fieldInput} />
+          {telErr && <ErrorCampo id="wa-e">{telErr}</ErrorCampo>}
+          </div>
           <button onClick={enviar} className={outlineBtn}><Icon n="chat" />Enviar código</button>
         </div>
-        {telErr && <p id="wa-e" role="alert" className="mt-2 t-body font-semibold text-[#B3261E]">{telErr}</p>}
       </div>
     )
   }
@@ -313,14 +326,16 @@ function PasoIdentificacion({ t }: { t: Tramite }) {
       </div>
       <label htmlFor="otp" className="mt-4 block text-base font-semibold text-[#1F2933]">Código de verificación</label>
       <p id="otp-h" className="mt-1 inline-block rounded-md bg-[#EBF4FC] px-3 py-1 t-meta font-semibold text-[#1F2933]">Código de demostración: {CODIGO_DEMO}</p>
-      <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="sm:w-80">
         <input id="otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code}
           onChange={(e) => { setCode(e.target.value.replace(/\D/g, '')); if (codeErr) setCodeErr(null) }}
           onKeyDown={(e) => e.key === 'Enter' && verificar()}
-          aria-invalid={!!codeErr} aria-describedby={codeErr ? 'otp-h otp-e' : 'otp-h'} placeholder="6 dígitos" className={`${fieldInput} font-mono tracking-widest sm:max-w-[12rem]`} />
+          aria-invalid={!!codeErr} aria-describedby={codeErr ? 'otp-h otp-e' : 'otp-h'} placeholder="6 dígitos" className={`${fieldInput} font-mono tracking-widest`} />
+        {codeErr && <ErrorCampo id="otp-e">{codeErr}</ErrorCampo>}
+        </div>
         <button onClick={verificar} className={outlineBtn}><Icon n="check" />Verificar código</button>
       </div>
-      {codeErr && <p id="otp-e" role="alert" className="mt-2 t-body font-semibold text-[#B3261E]">{codeErr}</p>}
     </div>
   )
 }
@@ -358,20 +373,7 @@ function Resumen({ t, onCambiar }: { t: Tramite; onCambiar?: (p: Paso) => void }
 }
 
 function PasoPago({ t, onCambiar }: { t: Tramite; onCambiar: (p: Paso) => void }) {
-  const { update, go } = useApp()
-  const sinClinica = !t.clinica
-  const falta = sinClinica ? 'Elige una clínica para confirmar tu cita (toca “Cambiar” en Clínica).' : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
-
-  const confirmar = () => {
-    if (t.metodoPago === 'oxxo') {
-      update((x) => conEvento({ ...x, estado: 'pago_pendiente', desdeResumen: false }, 'pago.referencia_generada', 'Referencia de pago en Oxxo generada (demo)'))
-      go('pay')
-      return
-    }
-    update((x) => conEvento({ ...x, estado: 'confirmada', desdeResumen: false }, 'cita.confirmada', `${METODO[x.metodoPago!]} · ${x.fecha ? fechaLarga(x.fecha) : ''} ${x.hora ?? ''}`))
-    window.scrollTo(0, 0)
-  }
-
+  const { update } = useApp()
   return (
     <>
       <section aria-labelledby="res-t" className="rounded-2xl border border-[#D6E4F5] bg-white p-6">
@@ -390,12 +392,6 @@ function PasoPago({ t, onCambiar }: { t: Tramite; onCambiar: (p: Paso) => void }
           ))}
         </div>
       </fieldset>
-      <div className="mt-6">
-        {falta && <p id="falta-5" className="mb-3 t-body text-[#43474A]">{falta}</p>}
-        <button onClick={confirmar} disabled={!!falta} aria-describedby={falta ? 'falta-5' : undefined} className={`${solidBtn} w-full sm:w-auto`}>
-          {t.metodoPago === 'oxxo' ? 'Generar referencia de pago' : 'Confirmar cita'}<Icon n="arrow" />
-        </button>
-      </div>
     </>
   )
 }

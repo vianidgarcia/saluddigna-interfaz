@@ -14,6 +14,7 @@ import { Agendar } from './views/Agendar'
 import { PASOS, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
 
 const VIEW_KEY = 'sd_vista'
+const COOKIES_KEY = 'sd_cookies'
 const VIEWS: View[] = ['home', 'pay', 'tramites', 'resultados', 'agendar']
 
 /** La vista se recuerda por pestaña: al recargar a mitad del flujo se vuelve a la misma pantalla. */
@@ -34,7 +35,11 @@ export default function App() {
   const [view, setView] = useState<View>(() => loadView(tramite))
   const [clinic, setClinic] = useState(CLINICS[0])
   const [sheet, setSheet] = useState(false)
-  const [cookies, setCookies] = useState(true)
+  const [cookies, setCookies] = useState(() => { try { return !window.localStorage.getItem(COOKIES_KEY) } catch { return true } })
+  const cerrarCookies = (eleccion: string) => {
+    setCookies(false)
+    try { window.localStorage.setItem(COOKIES_KEY, eleccion) } catch { /* sin almacenamiento: se vuelve a preguntar */ }
+  }
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const timer = useRef<number | undefined>(undefined)
 
@@ -100,7 +105,7 @@ export default function App() {
       <div className="flex min-h-screen flex-col pb-16 lg:pb-0">
         <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:font-semibold focus:text-[#005BB0] focus:shadow-lg">Saltar al contenido</a>
         <Header clinic={clinic} onChange={() => setSheet(true)} onHome={() => go('home')} />
-        {cookies && <Cookies onDone={() => setCookies(false)} />}
+        {cookies && <Cookies onDone={cerrarCookies} />}
         <main id="contenido" tabIndex={-1} className="flex-1 focus:outline-none">
           {activeView === 'home' && <Home clinic={clinic} />}
           {activeView === 'pay' && <Pay />}

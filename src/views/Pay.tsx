@@ -3,7 +3,7 @@ import { useApp } from '../context'
 import { Back } from '../components/Back'
 import { Icon } from '../components/Icon'
 import { WA, NB, container, outlineBtn, link, solidBtn } from '../components/ui'
-import { conEvento, fechaLarga } from '../state/tramite'
+import { avance, conEvento, fechaLarga } from '../state/tramite'
 
 /** Referencia de ejemplo de 16 dígitos, estable para cada trámite. */
 function referencia(id: string) {
@@ -50,7 +50,7 @@ export function Pay() {
         <p className="t-body text-[#1F2933]">{t.estudio?.nombre} · {t.clinica}</p>
         <span className="inline-flex items-center gap-2 rounded-full bg-[#FDF1DB] px-3 py-1 t-meta font-semibold text-[#7A4E00]"><span aria-hidden="true" className="size-2 rounded-full bg-[#F2A00D]" />Pago pendiente</span>
       </div>
-      <div role="progressbar" aria-valuemin={0} aria-valuemax={5} aria-valuenow={5} aria-valuetext="Paso 5 de 5: pago pendiente" aria-label="Avance del trámite" className="mt-6 h-2 max-w-xl rounded-full bg-[#EBF4FC]"><div className="h-full w-full rounded-full bg-[#005BB0]" /></div>
+      <div role="progressbar" aria-valuemin={0} aria-valuemax={5} aria-valuenow={5} aria-valuetext="Paso 5 de 5: pago pendiente" aria-label="Avance del trámite" className="mt-6 h-2 max-w-xl rounded-full bg-[#EBF4FC]"><div className="h-full rounded-full bg-[#005BB0]" style={{ width: `${avance(5)}%` }} /></div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-12">
         <section aria-labelledby="ref-t" className="rounded-2xl border border-[#D6E4F5] bg-white p-6 shadow-[0_8px_24px_-4px_rgba(0,68,128,0.16)] lg:col-span-7 lg:p-8">
