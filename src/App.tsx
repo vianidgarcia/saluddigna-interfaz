@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Ctx, type AppCtx, type EstudioElegido, type View } from './context'
 import { CLINICS } from './data/clinics'
 import { Header } from './components/Header'
@@ -11,7 +11,11 @@ import { Pay } from './views/Pay'
 import { Tramites } from './views/Tramites'
 import { Resultados } from './views/Resultados'
 import { Agendar } from './views/Agendar'
-import { PASOS, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
+import { Entrar } from './views/Entrar'
+import { Asesor } from './views/Asesor'
+import { StaffHeader } from './components/StaffHeader'
+import { loadSesion, saveSesion, type Sesion } from './state/sesion'
+import { PASOS, STORAGE_KEY, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
 
 const VIEW_KEY = 'sd_vista'
 const COOKIES_KEY = 'sd_cookies'
@@ -32,6 +36,20 @@ function loadView(t: Tramite | null): View {
 export default function App() {
   const [tramite, setTramite] = useState<Tramite | null>(loadTramite)
   const tRef = useRef(tramite)
+  const [sesion, setSesion] = useState<Sesion | null>(loadSesion)
+
+  // Otra pestaña (p. ej. el Asesor) cambió el trámite: se refleja aquí sin recargar.
+  // La sesión NO se sincroniza: cada pestaña conserva su propio rol.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && e.key !== STORAGE_KEY) return
+      const t = loadTramite()
+      tRef.current = t
+      setTramite(t)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
   const [view, setView] = useState<View>(() => loadView(tramite))
   const [clinic, setClinic] = useState(CLINICS[0])
   const [sheet, setSheet] = useState(false)
@@ -85,8 +103,12 @@ export default function App() {
   }
 
   const simularWhatsApp = () => {
-    const t = tRef.current
+    let t = tRef.current
     if (!t) { toast('Primero agenda una cita para simular el regreso por WhatsApp'); return }
+    // el chat de WhatsApp ya trae el número: se guarda para no volver a pedirlo (número de demostración)
+    if (!t.paciente.whatsapp) {
+      t = conEvento({ ...t, paciente: { ...t.paciente, whatsapp: '6671234567', codigoEnviado: false } }, 'paciente.whatsapp_identificado', 'El número llegó con el chat de WhatsApp ••• 4567 (número de demostración)', 'whatsapp')
+    }
     commit(conEvento(t, 'canal.mensaje_recibido', 'Escribió por WhatsApp “¿Cómo va mi cita?” y el asistente respondió con su avance (demo)', 'whatsapp'))
     go('home')
     toast('Demo: se registró un mensaje por WhatsApp')
@@ -98,7 +120,32 @@ export default function App() {
     toast('Demo reiniciada: no hay trámites en curso')
   }
 
-  const ctx: AppCtx = { go, toast, openClinics: () => setSheet(true), scrollToId, tramite, update, startAgendar, continuar, simularWhatsApp, reiniciarDemo }
+  const entrarComo = (s: Sesion) => { saveSesion(s); setSesion(s); go('home') }
+  const salir = () => { saveSesion(null); setSesion(null); go('home') }
+
+  const ctx: AppCtx = { go, toast, openClinics: () => setSheet(true), scrollToId, tramite, update, startAgendar, continuar, simularWhatsApp, reiniciarDemo, sesion, salir }
+  const toastEl = (
+    <div role="status" aria-live="polite" className="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 lg:bottom-8">
+      {toastMsg && <div className="rounded-lg bg-[#1F2933] px-5 py-3 text-base text-white shadow-lg">{toastMsg}</div>}
+    </div>
+  )
+
+  if (!sesion) return <Entrar onEntrar={entrarComo} />
+
+  if (sesion.rol !== 'paciente') {
+    return (
+      <Ctx.Provider value={ctx}>
+        <div className="flex min-h-screen flex-col bg-white">
+          <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:font-semibold focus:text-[#005BB0] focus:shadow-lg">Saltar al contenido</a>
+          <StaffHeader />
+          <main id="contenido" tabIndex={-1} className="flex-1 focus:outline-none"><Asesor /></main>
+          <footer className="border-t border-[#D6E4F5] py-4"><p className="mx-auto w-full max-w-[1200px] px-4 t-meta text-[#5B6B7A] lg:px-8">Prototipo · todos los datos son de demostración.</p></footer>
+          {toastEl}
+        </div>
+      </Ctx.Provider>
+    )
+  }
+
   const activeView: View = (view === 'agendar' && !tramite) ? 'home' : view
   return (
     <Ctx.Provider value={ctx}>
@@ -116,9 +163,7 @@ export default function App() {
         <Footer />
         <BottomNav view={activeView} />
         {sheet && <ClinicSheet current={clinic} onSelect={setClinic} onClose={() => setSheet(false)} />}
-        <div role="status" aria-live="polite" className="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 lg:bottom-8">
-          {toastMsg && <div className="rounded-lg bg-[#1F2933] px-5 py-3 text-base text-white shadow-lg">{toastMsg}</div>}
-        </div>
+        {toastEl}
       </div>
     </Ctx.Provider>
   )

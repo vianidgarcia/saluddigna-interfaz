@@ -10,11 +10,15 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - `npx tsc --noEmit` para revisar tipos (`vite build` no los revisa).
 
 ## Estructura
-- `src/App.tsx`: estado global (vista, clínica, trámite) y contexto `useApp`.
-- `src/components/`: piezas de interfaz (Header, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, Icon, ui).
-- `src/views/`: Home, Agendar, Pay, Tramites, Resultados.
+- `src/App.tsx`: estado global (sesión, vista, clínica, trámite) y contexto `useApp`. Sin sesión muestra `Entrar`;
+  Paciente ve el portal; Asesor y Administrador ven `StaffHeader` + `views/Asesor`.
+- `src/components/`: piezas de interfaz (Header, StaffHeader, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, SelectorHorario, Icon, ui).
+- `src/views/`: Entrar, Home, Agendar, Pay, Tramites, Resultados, Asesor (también la usa Administrador).
 - `src/data/`: clinics, studies, packages.
 - `src/state/tramite.ts`: tipo `Tramite`, persistencia en localStorage (`sd_tramite_activo`) y línea de tiempo de eventos.
+  Los eventos `nota.interna` solo los ven Asesor/Administrador. Las pestañas se sincronizan con el evento `storage`.
+- `src/state/sesion.ts`: roles y credenciales de demostración (`sd_sesion` en localStorage + copia por pestaña en
+  sessionStorage, para tener Paciente y Asesor abiertos a la vez).
 
 ## Sistema visual (no cambiar sin pedirlo)
 - Colores: azul acción #0074D9 (hover #005BB0), azul marino #004480 (tarjeta de continuidad),

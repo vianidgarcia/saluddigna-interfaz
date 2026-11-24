@@ -15,7 +15,8 @@ export type Tramite = {
   clinicaPendiente: boolean
   fecha: string | null // AAAA-MM-DD
   hora: string | null // HH:MM
-  paciente: { nombre: string; whatsapp: string | null; verificado: boolean }
+  /** codigoEnviado: ya se mandó un código y se espera que el paciente lo escriba */
+  paciente: { nombre: string; whatsapp: string | null; verificado: boolean; codigoEnviado?: boolean }
   metodoPago: MetodoPago | null
   paso: Paso
   estado: Estado
@@ -151,3 +152,40 @@ export const TICK_MS = 30000
 
 /** Relleno de la barra (%): el paso actual cuenta como medio segmento, así el paso 5 no se ve terminado. */
 export const avance = (paso: number) => (paso - 0.5) * 20
+
+/** Eventos que solo ven asesores y administradores. */
+export const esNotaInterna = (e: Evento) => e.tipo === 'nota.interna'
+
+/** Agrega una nota interna sin cambiar el último canal que ve el paciente. */
+export function conNota(t: Tramite, texto: string, autor: string): Tramite {
+  return { ...t, eventos: [...t.eventos, { tipo: 'nota.interna', canal: 'call_center', fecha: new Date().toISOString(), detalle: `${autor}: ${texto}` }] }
+}
+
+/** ¿Ya se envió un código? (trámites guardados antes de este campo: se infiere del número) */
+export const codigoEnviado = (t: Tramite) => t.paciente.codigoEnviado ?? (!!t.paciente.whatsapp && !t.paciente.verificado)
+
+export const TIPO_EVENTO: Record<string, string> = {
+  'tramite.iniciado': 'Trámite iniciado',
+  'tramite.paso_completado': 'Paso completado',
+  'tramite.paso_regresado': 'Regresó un paso',
+  'tramite.dato_editado': 'Editó un dato',
+  'tramite.retomado': 'Retomó el trámite',
+  'paciente.whatsapp_identificado': 'Número identificado',
+  'paciente.codigo_enviado': 'Código de verificación enviado',
+  'paciente.verificado': 'Identidad verificada',
+  'pago.referencia_generada': 'Referencia de pago generada',
+  'pago.referencia_enviada': 'Referencia enviada por WhatsApp',
+  'pago.metodo_cambiado': 'Cambió el método de pago',
+  'canal.mensaje_recibido': 'Mensaje recibido',
+  'asesor.clinica_confirmada': 'Clínica confirmada',
+  'asesor.reagendado': 'Cita reagendada',
+  'cita.confirmada': 'Cita confirmada',
+  'nota.interna': 'Nota interna',
+}
+
+/** "10:42" si es de hoy; "24 nov, 10:42" si no. */
+export function horaEvento(iso: string): string {
+  const d = new Date(iso)
+  const hora = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return d.toDateString() === new Date().toDateString() ? hora : `${d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).replace('.', '')}, ${hora}`
+}

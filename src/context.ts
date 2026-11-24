@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { Tramite } from './state/tramite'
+import type { Sesion } from './state/sesion'
 
 export type View = 'home' | 'pay' | 'tramites' | 'resultados' | 'agendar'
 export type EstudioElegido = NonNullable<Tramite['estudio']>
@@ -17,6 +18,9 @@ export type AppCtx = {
   /** abre el paso exacto donde se quedó el paciente */
   continuar: () => void
   simularWhatsApp: () => void
+  /** sesión simulada por rol */
+  sesion: Sesion | null
+  salir: () => void
   reiniciarDemo: () => void
 }
 export const Ctx = createContext<AppCtx>(null as unknown as AppCtx)

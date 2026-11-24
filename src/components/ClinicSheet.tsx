@@ -3,7 +3,9 @@ import { clinicasPorDistancia, type Clinic } from '../data/clinics'
 import { Icon } from './Icon'
 import { NB, outlineBtn } from './ui'
 
-export function ClinicSheet({ current, onSelect, onClose }: { current: Clinic; onSelect: (c: Clinic) => void; onClose: () => void }) {
+export function ClinicSheet({ current, onSelect, onClose, titulo = 'Elige tu clínica', sinSeleccion = false }: {
+  current: Clinic; onSelect: (c: Clinic) => void; onClose: () => void; titulo?: string; sinSeleccion?: boolean
+}) {
   const [q, setQ] = useState('')
   const [located, setLocated] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
@@ -20,7 +22,7 @@ export function ClinicSheet({ current, onSelect, onClose }: { current: Clinic; o
       <div onClick={onClose} className="absolute inset-0 bg-[#1F2933]/50 [animation:fade_200ms_ease-out]" />
       <div role="dialog" aria-modal="true" aria-labelledby="sheet-t" className="relative flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-white [animation:sheet-up_250ms_cubic-bezier(.2,0,0,1)] lg:max-h-none lg:w-[440px] lg:rounded-none lg:[animation:sheet-right_250ms_cubic-bezier(.2,0,0,1)]">
         <div className="flex items-center justify-between border-b border-[#D6E4F5] px-4 py-3 lg:px-6">
-          <h2 id="sheet-t" className="t-card font-head text-[#1F2933]">Elige tu clínica</h2>
+          <h2 id="sheet-t" className="t-card font-head text-[#1F2933]">{titulo}</h2>
           <button onClick={onClose} className="inline-flex min-h-12 items-center gap-1 rounded-md px-2 text-base font-semibold text-[#005BB0] hover:bg-[#EBF4FC] active:bg-[#D6E4F5]"><Icon n="x" />Cerrar</button>
         </div>
         <div className="px-4 pt-4 lg:px-6">
@@ -34,7 +36,7 @@ export function ClinicSheet({ current, onSelect, onClose }: { current: Clinic; o
         </div>
         <ul className="mt-4 flex-1 overflow-y-auto px-4 pb-6 lg:px-6">
           {list.map((c) => {
-            const sel = c.name === current.name
+            const sel = !sinSeleccion && c.name === current.name
             return (
               <li key={c.name} className="border-t border-[#D6E4F5]">
                 <button onClick={() => { onSelect(c); onClose() }} aria-pressed={sel} className="-mx-2 flex w-[calc(100%+16px)] min-h-16 items-center justify-between gap-3 rounded-md px-2 py-3 text-left transition-colors hover:bg-[#EBF4FC] active:bg-[#D6E4F5]">

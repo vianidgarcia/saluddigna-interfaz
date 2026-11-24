@@ -20,7 +20,7 @@ export function Logo() {
 /* ---------- header ---------- */
 export function Header({ clinic, onChange, onHome }: { clinic: Clinic; onChange: () => void; onHome: () => void }) {
   const [open, setOpen] = useState(false)
-  const { go, toast, openClinics, scrollToId } = useApp()
+  const { go, toast, openClinics, scrollToId, salir } = useApp()
   const navAct = (n: string) => { setOpen(false); if (n === 'Servicios') scrollToId('servicios'); else if (n === 'Paquetes') scrollToId('paquetes'); else if (n === 'Resultados') go('resultados'); else openClinics() }
   const item = 'inline-flex min-h-12 items-center rounded-md px-3 text-base font-semibold text-[#1F2933] transition-colors hover:bg-[#EBF4FC] hover:text-[#005BB0] active:bg-[#D6E4F5]'
   return (
@@ -41,6 +41,7 @@ export function Header({ clinic, onChange, onHome }: { clinic: Clinic; onChange:
           </button>
           <button onClick={() => go('tramites')} className={item}>Mis trámites</button>
           <button onClick={() => toast()} aria-label="Perfil de Ana" className="grid size-12 place-items-center rounded-full bg-[#EBF4FC] text-base font-semibold text-[#005BB0] transition-colors hover:bg-[#D6E4F5] active:bg-[#C4D9F0]">A</button>
+          <button onClick={salir} className={`${item} gap-2`}><Icon n="logout" />Salir</button>
         </div>
         <div className="flex items-center gap-2 lg:hidden">
           <button onClick={() => toast()} aria-label="Perfil de Ana" className="grid size-12 place-items-center rounded-full bg-[#EBF4FC] text-base font-semibold text-[#005BB0] active:bg-[#D6E4F5]">A</button>
@@ -57,6 +58,7 @@ export function Header({ clinic, onChange, onHome }: { clinic: Clinic; onChange:
             <button onClick={() => { setOpen(false); onChange() }} className={`${item} w-full gap-2`}>
               <Icon n="pin" className="text-[#005BB0]" />{clinic.name} · <span className="ml-1 text-[#005BB0] underline underline-offset-4">Cambiar</span>
             </button>
+            <button onClick={() => { setOpen(false); salir() }} className={`${item} w-full gap-2`}><Icon n="logout" />Salir</button>
           </nav>
         </div>
       )}

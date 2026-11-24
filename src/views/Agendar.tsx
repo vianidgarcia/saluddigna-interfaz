@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useApp } from '../context'
 import { Back } from '../components/Back'
+import { SelectorHorario } from '../components/SelectorHorario'
 import { Icon } from '../components/Icon'
 import { CHIPS, STUDIES } from '../data/studies'
 import { clinicasPorDistancia, findClinic } from '../data/clinics'
 import { NB, WA, container, chip, link, outlineBtn, solidBtn } from '../components/ui'
 import {
-  METODO, PASOS, avance, conEvento, fechaLarga, pasoCompleto, ultimos4,
+  METODO, PASOS, avance, codigoEnviado, conEvento, fechaLarga, pasoCompleto, ultimos4,
   type MetodoPago, type Paso, type Tramite,
 } from '../state/tramite'
 
@@ -70,7 +71,7 @@ function Flujo({ t }: { t: Tramite }) {
   if (paso === 2 && !pasoCompleto(t, 2)) falta = 'Elige una clínica o marca “Aún no lo decido” para continuar.'
   if (paso === 3 && !t.fecha) falta = 'Elige un día para ver los horarios.'
   if (paso === 3 && t.fecha && !t.hora) falta = 'Elige un horario para continuar.'
-  if (paso === 4 && !t.paciente.verificado) falta = t.paciente.whatsapp ? 'Escribe el código que te enviamos para continuar.' : 'Verifica tu número de WhatsApp para continuar.'
+  if (paso === 4 && !t.paciente.verificado) falta = codigoEnviado(t) ? 'Escribe el código que te enviamos para continuar.' : 'Verifica tu número de WhatsApp para continuar.'
   if (paso === 5) falta = !t.clinica ? 'Elige una clínica para confirmar tu cita (toca “Cambiar” en Clínica).' : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
 
   const confirmar = () => {
@@ -203,58 +204,11 @@ function PasoClinica({ t }: { t: Tramite }) {
 }
 
 /* ---------- paso 3: fecha y hora ---------- */
-const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-const proximosDias = () => Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i + 1); return d })
-const HORAS = Array.from({ length: 21 }, (_, i) => `${String(8 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`)
-/** ocupación de demostración, estable para cada día y hora */
-const ocupado = (fecha: string, hora: string) => {
-  let h = 0
-  for (const ch of fecha + hora) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return h % 4 === 0
-}
-
 function PasoFecha({ t }: { t: Tramite }) {
   const { update } = useApp()
-  const dias = proximosDias()
-  return (
-    <>
-      <p id="dia-l" className="text-base font-semibold text-[#1F2933]">Día</p>
-      <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-7" role="group" aria-labelledby="dia-l">
-        {dias.map((d) => {
-          const v = iso(d)
-          const on = t.fecha === v
-          return (
-            <button key={v} onClick={() => update((x) => ({ ...x, fecha: v, hora: x.fecha === v ? x.hora : null }))} aria-pressed={on}
-              aria-label={fechaLarga(v)}
-              className={`min-h-14 rounded-lg border px-1 py-2 text-center transition-colors ${on ? 'border-[#005BB0] bg-[#EBF4FC] text-[#005BB0]' : 'border-[#D6E4F5] bg-white text-[#1F2933] hover:border-[#0074D9] hover:bg-[#EBF4FC]'}`}>
-              <span className="block t-meta capitalize">{d.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')}</span>
-              <span className="block text-base font-semibold">{d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }).replace('.', '')}</span>
-            </button>
-          )
-        })}
-      </div>
-      {t.fecha && (
-        <div className="mt-6">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <p id="hora-l" className="text-base font-semibold text-[#1F2933]">Horario</p>
-            <span className="rounded-full bg-[#EBF4FC] px-3 py-1 t-meta font-semibold text-[#1F2933]">Horarios de demostración</span>
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-7" role="group" aria-labelledby="hora-l">
-            {HORAS.map((h) => {
-              const busy = ocupado(t.fecha!, h)
-              const on = t.hora === h
-              return (
-                <button key={h} disabled={busy} aria-pressed={on} onClick={() => update((x) => ({ ...x, hora: h }))}
-                  className={`min-h-12 rounded-lg border px-2 text-base transition-colors ${busy ? 'cursor-not-allowed border-dashed border-[#D6E4F5] bg-[#ECF3F9] text-[#5B6B7A]' : on ? 'border-[#005BB0] bg-[#EBF4FC] font-semibold text-[#005BB0]' : 'border-[#D6E4F5] bg-white text-[#1F2933] hover:border-[#0074D9] hover:bg-[#EBF4FC]'}`}>
-                  {h}{busy && <span className="block t-meta leading-none">Ocupado</span>}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </>
-  )
+  return <SelectorHorario fecha={t.fecha} hora={t.hora}
+    onFecha={(v) => update((x) => ({ ...x, fecha: v, hora: x.fecha === v ? x.hora : null }))}
+    onHora={(h) => update((x) => ({ ...x, hora: h }))} />
 }
 
 /* ---------- paso 4: identificación ---------- */
@@ -264,7 +218,8 @@ function ErrorCampo({ id, children }: { id: string; children: ReactNode }) {
 
 function PasoIdentificacion({ t }: { t: Tramite }) {
   const { update, toast } = useApp()
-  const [tel, setTel] = useState('')
+  // si el número ya se conoce (p. ej. llegó por WhatsApp), se precarga: no se vuelve a pedir
+  const [tel, setTel] = useState(() => (t.paciente.whatsapp ?? '').replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3'))
   const [telErr, setTelErr] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [codeErr, setCodeErr] = useState<string | null>(null)
@@ -278,7 +233,7 @@ function PasoIdentificacion({ t }: { t: Tramite }) {
     }
     setTelErr(null)
     setCode('')
-    update((x) => conEvento({ ...x, paciente: { ...x.paciente, whatsapp: d, verificado: false } }, 'paciente.codigo_enviado', `Código enviado por WhatsApp a ${ultimos4(d)} (demo)`))
+    update((x) => conEvento({ ...x, paciente: { ...x.paciente, whatsapp: d, verificado: false, codigoEnviado: true } }, 'paciente.codigo_enviado', `Código enviado por WhatsApp a ${ultimos4(d)} (demo)`))
   }
   const verificar = () => {
     const c = code.replace(/\D/g, '')
@@ -287,7 +242,7 @@ function PasoIdentificacion({ t }: { t: Tramite }) {
     setCodeErr(null)
     update((x) => conEvento({ ...x, paciente: { ...x.paciente, verificado: true } }, 'paciente.verificado', `WhatsApp ${ultimos4(x.paciente.whatsapp)} verificado`))
   }
-  const otroNumero = () => { setTel(''); setCode(''); setCodeErr(null); update((x) => ({ ...x, paciente: { ...x.paciente, whatsapp: null, verificado: false } })) }
+  const otroNumero = () => { setTel(''); setCode(''); setCodeErr(null); update((x) => ({ ...x, paciente: { ...x.paciente, whatsapp: null, verificado: false, codigoEnviado: false } })) }
 
   if (p.verificado) {
     return (
@@ -298,7 +253,7 @@ function PasoIdentificacion({ t }: { t: Tramite }) {
     )
   }
 
-  if (!p.whatsapp) {
+  if (!codigoEnviado(t)) {
     return (
       <div>
         <label htmlFor="wa" className="text-base font-semibold text-[#1F2933]">Número de WhatsApp</label>
