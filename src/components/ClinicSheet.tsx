@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Clinic } from '../data/clinics'
 import { FiltrosClinica, MasClinicas, fmtKm, useBuscadorClinica } from './BuscadorClinica'
+import { MapaClinicasDiferido as MapaClinicas } from './MapaDiferido'
 import { Icon } from './Icon'
 import { NB } from './ui'
 
@@ -27,6 +28,10 @@ export function ClinicSheet({ current, onSelect, onClose, titulo = 'Elige tu cl√
         </div>
         <div className="px-4 pt-4 lg:px-6">
           <FiltrosClinica b={b} id="cs" inputRef={ref} />
+          <div className="mt-3">
+            <MapaClinicas alto="h-48 lg:h-56" clinicas={b.enMapa.map((r) => r.c)} elegida={sinSeleccion ? null : current.name} ubicacion={b.ubicacion}
+              onElegir={(c) => { onSelect(c); onClose() }} />
+          </div>
         </div>
         <ul className="mt-4 flex-1 overflow-y-auto px-4 pb-6 lg:px-6">
           {list.map(({ c, km }) => {
