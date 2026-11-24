@@ -10,7 +10,7 @@ import {
   fechaLarga, hace, horaEvento, TOTAL_PASOS, yaPaso, type Tramite,
 } from '../state/tramite'
 
-const fieldInput = 'w-full rounded-lg border border-[#D6E4F5] bg-white px-4 text-base text-[#1F2933] transition-colors hover:border-[#0074D9]'
+const fieldInput = 'w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion'
 const sinAcentos = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 function coincide(t: Tramite, q: string): boolean {
@@ -20,8 +20,8 @@ function coincide(t: Tramite, q: string): boolean {
 }
 
 const Pendiente = ({ children }: { children: ReactNode }) => (
-  <span className="inline-flex items-center gap-2 rounded-full bg-[#FDF1DB] px-3 py-1 t-meta font-semibold text-[#7A4E00]">
-    <span aria-hidden="true" className="size-2 rounded-full bg-[#F2A00D]" />{children}
+  <span className="inline-flex items-center gap-2 rounded-full bg-ambar-fondo px-3 py-1 t-meta font-semibold text-ambar-texto">
+    <span aria-hidden="true" className="size-2 rounded-full bg-ambar" />{children}
   </span>
 )
 
@@ -37,31 +37,31 @@ export function Asesor() {
 
   return (
     <div className={`${container} py-8 lg:py-12`}>
-      <h1 className="t-greeting font-head text-[#1F2933]">Atención al paciente</h1>
+      <h1 className="t-greeting font-head text-titulo">Atención al paciente</h1>
       <p className="mt-2 max-w-3xl t-body">Busca al paciente y retoma su trámite con todo lo que ya hizo en web, WhatsApp o Call Center, sin volver a pedirle sus datos.</p>
 
       <section className="mt-6 max-w-3xl">
-        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-[#1F2933]">Buscar paciente por nombre o cuenta</label>
+        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-titulo">Buscar paciente por nombre o cuenta</label>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#5B6B7A]" />
+            <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secundario" />
             <input id="buscar" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && buscar()}
               aria-describedby="buscar-h" placeholder="Ej. Ana o ana@demo.mx" className={`${fieldInput} h-12 pl-12`} />
           </div>
           <button onClick={buscar} className={outlineBtn}><Icon n="search" />Buscar</button>
         </div>
-        <p id="buscar-h" className="mt-1 t-meta text-[#5B6B7A]">Prueba con “Ana” o con su cuenta del portal (ana@demo.mx).</p>
+        <p id="buscar-h" className="mt-1 t-meta text-secundario">Prueba con “Ana” o con su cuenta del portal (ana@demo.mx).</p>
 
         <div role="status" className="mt-4">
-          {!t && <p className="rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]">No hay trámites activos. Inicia uno desde el portal del paciente.</p>}
-          {t && buscado !== null && !encontrado && <p className="t-body text-[#1F2933]">No encontramos pacientes con “{buscado}”. Revisa el nombre o la cuenta.</p>}
+          {!t && <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">No hay trámites activos. Inicia uno desde el portal del paciente.</p>}
+          {t && buscado !== null && !encontrado && <p className="t-body text-titulo">No encontramos pacientes con “{buscado}”. Revisa el nombre o la cuenta.</p>}
         </div>
         {t && encontrado && (
           <ul aria-label="Resultados de búsqueda">
-            <li className="flex flex-col gap-2 border-y border-[#D6E4F5] py-3 sm:flex-row sm:items-center sm:justify-between">
+            <li className="flex flex-col gap-2 border-y border-borde py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="t-sub font-bold text-[#1F2933]">{t.paciente.nombre}<span className="font-normal text-[#43474A]"> · {t.paciente.cuenta}</span></p>
-                <p className="t-meta text-[#5B6B7A]">{t.estudio?.nombre ?? 'Estudio por elegir'} · Folio {t.id} (de ejemplo)</p>
+                <p className="t-sub font-bold text-titulo">{t.paciente.nombre}<span className="font-normal text-cuerpo"> · {t.paciente.cuenta}</span></p>
+                <p className="t-meta text-secundario">{t.estudio?.nombre ?? 'Estudio por elegir'} · Folio {t.id} (de ejemplo)</p>
               </div>
               <button onClick={() => setAbierta(true)} aria-pressed={abierta} className={`${link} shrink-0`}>{abierta ? 'Ficha abierta' : 'Abrir ficha'}<Icon n="arrow" /></button>
             </li>
@@ -126,31 +126,31 @@ function Ficha({ t }: { t: Tramite }) {
     <div className="mt-10 grid gap-10 lg:grid-cols-12 lg:gap-8">
       <div className="flex flex-col gap-8 lg:col-span-7">
         {/* paciente */}
-        <section aria-labelledby="fp-t" className="rounded-2xl border border-[#D6E4F5] bg-white p-6">
-          <h2 id="fp-t" className="t-card font-head text-[#1F2933]">Ficha del paciente</h2>
+        <section aria-labelledby="fp-t" className="rounded-2xl border border-borde bg-superficie p-6">
+          <h2 id="fp-t" className="t-card font-head text-titulo">Ficha del paciente</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div><dt className="t-meta text-[#5B6B7A]">Nombre</dt><dd className="t-body font-semibold text-[#1F2933]">{p.nombre}</dd></div>
-            <div><dt className="t-meta text-[#5B6B7A]">Cuenta del portal</dt><dd className="t-body font-semibold text-[#1F2933] break-words">{p.cuenta}</dd></div>
+            <div><dt className="t-meta text-secundario">Nombre</dt><dd className="t-body font-semibold text-titulo">{p.nombre}</dd></div>
+            <div><dt className="t-meta text-secundario">Cuenta del portal</dt><dd className="t-body font-semibold text-titulo break-words">{p.cuenta}</dd></div>
           </dl>
         </section>
 
         {/* trámite */}
-        <section aria-labelledby="ft-t" className="rounded-2xl border border-[#D6E4F5] bg-white p-6">
+        <section aria-labelledby="ft-t" className="rounded-2xl border border-borde bg-superficie p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="ft-t" className="t-card font-head text-[#1F2933]">Estado del trámite</h2>
+            <h2 id="ft-t" className="t-card font-head text-titulo">Estado del trámite</h2>
             {confirmada
-              ? <span className="inline-flex items-center gap-2 t-body font-semibold text-[#006D3D]"><Icon n="check" size={18} />Cita confirmada</span>
+              ? <span className="inline-flex items-center gap-2 t-body font-semibold text-verde"><Icon n="check" size={18} />Cita confirmada</span>
               : t.estado === 'pago_pendiente' ? <Pendiente>Pago pendiente en Oxxo</Pendiente> : <Pendiente>En curso</Pendiente>}
           </div>
           <div className="mt-4">
-            <p className="t-sub font-semibold text-[#1F2933]">Paso {paso} de {TOTAL_PASOS} · {PASOS[paso]}</p>
-            <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}: ${PASOS[paso]}${confirmada ? ', confirmado' : ''}`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-[#EBF4FC]">
-              <div className="h-full rounded-full bg-[#005BB0]" style={{ width: `${confirmada ? 100 : avance(paso)}%` }} />
+            <p className="t-sub font-semibold text-titulo">Paso {paso} de {TOTAL_PASOS} · {PASOS[paso]}</p>
+            <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}: ${PASOS[paso]}${confirmada ? ', confirmado' : ''}`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-resaltado">
+              <div className="h-full rounded-full bg-accion-hover" style={{ width: `${confirmada ? 100 : avance(paso)}%` }} />
             </div>
           </div>
-          <dl className="mt-4 divide-y divide-[#D6E4F5]">
+          <dl className="mt-4 divide-y divide-borde">
             <Fila k="Estudio">{t.estudio?.nombre ?? <Pendiente>Sin elegir</Pendiente>}</Fila>
-            <Fila k="Clínica">{c ? <>{c.name}<span className="block t-meta font-normal text-[#5B6B7A]">{c.address}</span></> : <Pendiente>Pendiente</Pendiente>}</Fila>
+            <Fila k="Clínica">{c ? <>{c.name}<span className="block t-meta font-normal text-secundario">{c.address}</span></> : <Pendiente>Pendiente</Pendiente>}</Fila>
             <Fila k="Fecha y hora">{t.fecha && t.hora ? <span className="first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}</span> : <Pendiente>Sin elegir</Pendiente>}</Fila>
             <Fila k="Método de pago">{t.metodoPago ? METODO[t.metodoPago] : <Pendiente>Sin elegir</Pendiente>}</Fila>
             <Fila k="Canales">Inició en {CANAL[t.canalInicio]} · último movimiento por {CANAL[t.ultimoCanal]}, {hace(t.ultimaActualizacion)}</Fila>
@@ -159,11 +159,11 @@ function Ficha({ t }: { t: Tramite }) {
 
         {/* acciones */}
         <section aria-labelledby="fa-t">
-          <h2 id="fa-t" className="t-card font-head text-[#1F2933]">Acciones</h2>
-          <p className="mt-1 t-meta text-[#5B6B7A]">Cada acción actualiza el mismo trámite y queda en la línea de tiempo como Call Center.</p>
-          <p role="status" className="mt-3 min-h-0 t-body font-semibold text-[#1F2933] empty:hidden">{aviso && <span className="inline-flex items-center gap-2 rounded-lg bg-[#EBF4FC] px-3 py-2"><Icon n="check" size={18} className="text-[#005BB0]" />{aviso}</span>}</p>
+          <h2 id="fa-t" className="t-card font-head text-titulo">Acciones</h2>
+          <p className="mt-1 t-meta text-secundario">Cada acción actualiza el mismo trámite y queda en la línea de tiempo como Call Center.</p>
+          <p role="status" className="mt-3 min-h-0 t-body font-semibold text-titulo empty:hidden">{aviso && <span className="inline-flex items-center gap-2 rounded-lg bg-resaltado px-3 py-2"><Icon n="check" size={18} className="text-enlace" />{aviso}</span>}</p>
           {confirmada ? (
-            <p className="mt-4 flex items-center gap-2 t-body font-semibold text-[#006D3D]"><Icon n="check" />El trámite está cerrado como confirmado. El paciente ya lo ve en su portal.</p>
+            <p className="mt-4 flex items-center gap-2 t-body font-semibold text-verde"><Icon n="check" />El trámite está cerrado como confirmado. El paciente ya lo ve en su portal.</p>
           ) : (
             <>
               <div className="mt-4 flex flex-wrap gap-3">
@@ -172,25 +172,25 @@ function Ficha({ t }: { t: Tramite }) {
                 {t.metodoPago === 'oxxo' && <button onClick={reenviarReferencia} className={outlineBtn}><Icon n="chat" />Reenviar referencia por WhatsApp</button>}
               </div>
               {reagendar && (
-                <div id="reag" className="mt-4 border-t border-[#D6E4F5] pt-4">
-                  <div className="flex flex-wrap items-center gap-x-3"><p className="t-sub font-bold text-[#1F2933]">Nueva fecha y hora</p></div>
+                <div id="reag" className="mt-4 border-t border-borde pt-4">
+                  <div className="flex flex-wrap items-center gap-x-3"><p className="t-sub font-bold text-titulo">Nueva fecha y hora</p></div>
                   <div className="mt-2">
                     <SelectorHorario id="reag" fecha={nf} hora={nh} onFecha={(v) => { if (v !== nf) setNh(null); setNf(v) }} onHora={setNh} />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button onClick={guardarHorario} disabled={!nf || !nh} aria-describedby={!nf || !nh ? 'reag-h' : undefined}
-                      className={`${outlineBtn} disabled:cursor-not-allowed disabled:border-[#D6E4F5] disabled:bg-[#ECF3F9] disabled:text-[#43474A]`}><Icon n="check" />Guardar nuevo horario</button>
+                      className={`${outlineBtn} disabled:cursor-not-allowed disabled:border-borde disabled:bg-banda disabled:text-cuerpo`}><Icon n="check" />Guardar nuevo horario</button>
                     <button onClick={() => setReagendar(false)} className={link}>Cancelar</button>
                   </div>
-                  {(!nf || !nh) && <p id="reag-h" className="mt-1 t-meta text-[#5B6B7A]">{!nf ? 'Elige un día.' : 'Elige un horario.'}</p>}
+                  {(!nf || !nh) && <p id="reag-h" className="mt-1 t-meta text-secundario">{!nf ? 'Elige un día.' : 'Elige un horario.'}</p>}
                 </div>
               )}
-              <div className="mt-6 border-t border-[#D6E4F5] pt-6">
-                {falta.length > 0 && <p id="cerrar-h" className="mb-3 t-body text-[#43474A]">Para cerrar falta: {falta.join(', ')}.</p>}
+              <div className="mt-6 border-t border-borde pt-6">
+                {falta.length > 0 && <p id="cerrar-h" className="mb-3 t-body text-cuerpo">Para cerrar falta: {falta.join(', ')}.</p>}
                 <button onClick={cerrar} disabled={falta.length > 0} aria-describedby={falta.length ? 'cerrar-h' : undefined} className={`${solidBtn} w-full sm:w-auto`}>
                   <Icon n="check" />Cerrar trámite como confirmado
                 </button>
-                {!t.metodoPago && falta.length === 0 && <p className="mt-1 t-meta text-[#5B6B7A]">Sin método de pago elegido: se registrará como pago en clínica.</p>}
+                {!t.metodoPago && falta.length === 0 && <p className="mt-1 t-meta text-secundario">Sin método de pago elegido: se registrará como pago en clínica.</p>}
               </div>
             </>
           )}
@@ -198,11 +198,11 @@ function Ficha({ t }: { t: Tramite }) {
 
         {/* nota interna */}
         <section>
-          <label id="nota-l" htmlFor="nota" className="flex items-center gap-2 t-card font-head text-[#1F2933]"><Icon n="note" />Nota interna</label>
-          <p id="nota-h" className="mt-1 t-meta text-[#5B6B7A]">Solo la ven asesores y administradores; no aparece en el portal del paciente.</p>
+          <label id="nota-l" htmlFor="nota" className="flex items-center gap-2 t-card font-head text-titulo"><Icon n="note" />Nota interna</label>
+          <p id="nota-h" className="mt-1 t-meta text-secundario">Solo la ven asesores y administradores; no aparece en el portal del paciente.</p>
           <textarea id="nota" value={nota} onChange={(e) => setNota(e.target.value)} rows={3} aria-describedby="nota-h"
             placeholder="Ej. Prefiere que le llamen por la tarde." className={`${fieldInput} mt-2 py-3`} />
-          <button onClick={guardarNota} disabled={!nota.trim()} className={`${outlineBtn} mt-2 disabled:cursor-not-allowed disabled:border-[#D6E4F5] disabled:bg-[#ECF3F9] disabled:text-[#43474A]`}><Icon n="note" />Guardar nota</button>
+          <button onClick={guardarNota} disabled={!nota.trim()} className={`${outlineBtn} mt-2 disabled:cursor-not-allowed disabled:border-borde disabled:bg-banda disabled:text-cuerpo`}><Icon n="note" />Guardar nota</button>
         </section>
       </div>
 
@@ -217,7 +217,7 @@ function Ficha({ t }: { t: Tramite }) {
 }
 
 const Fila = ({ k, children }: { k: string; children: ReactNode }) => (
-  <div className="py-3 first:pt-0"><dt className="t-meta text-[#5B6B7A]">{k}</dt><dd className="t-body font-semibold text-[#1F2933]">{children}</dd></div>
+  <div className="py-3 first:pt-0"><dt className="t-meta text-secundario">{k}</dt><dd className="t-body font-semibold text-titulo">{children}</dd></div>
 )
 
 /* ---------- línea de tiempo unificada ---------- */
@@ -225,17 +225,17 @@ function Linea({ t }: { t: Tramite }) {
   const eventos = [...t.eventos].reverse()
   return (
     <section aria-labelledby="lt-t" className="lg:sticky lg:top-24">
-      <h2 id="lt-t" className="t-card font-head text-[#1F2933]">Línea de tiempo</h2>
-      <p className="mt-1 t-meta text-[#5B6B7A]">Todos los canales en una sola conversación. Lo más reciente arriba.</p>
+      <h2 id="lt-t" className="t-card font-head text-titulo">Línea de tiempo</h2>
+      <p className="mt-1 t-meta text-secundario">Todos los canales en una sola conversación. Lo más reciente arriba.</p>
       <ol className="mt-4" aria-live="polite">
         {eventos.map((e, i) => {
           const nota = esNotaInterna(e)
           return (
-            <li key={`${e.fecha}-${i}`} className={`flex gap-3 border-t border-[#D6E4F5] py-3 ${nota ? '-mx-3 rounded-lg border-t-0 bg-[#EBF4FC] px-3' : ''}`}>
-              <Icon n={nota ? 'note' : ICONO_CANAL[e.canal]} className="mt-1 text-[#0074D9]" />
+            <li key={`${e.fecha}-${i}`} className={`flex gap-3 border-t border-borde py-3 ${nota ? '-mx-3 rounded-lg border-t-0 bg-resaltado px-3' : ''}`}>
+              <Icon n={nota ? 'note' : ICONO_CANAL[e.canal]} className="mt-1 text-icono" />
               <div className="min-w-0">
-                <p className="t-meta text-[#5B6B7A]"><time dateTime={e.fecha}>{horaEvento(e.fecha)}</time> · {nota ? 'Nota interna · solo personal' : CANAL[e.canal]}</p>
-                <p className="t-body font-semibold text-[#1F2933]">{TIPO_EVENTO[e.tipo] ?? e.tipo}</p>
+                <p className="t-meta text-secundario"><time dateTime={e.fecha}>{horaEvento(e.fecha)}</time> · {nota ? 'Nota interna · solo personal' : CANAL[e.canal]}</p>
+                <p className="t-body font-semibold text-titulo">{TIPO_EVENTO[e.tipo] ?? e.tipo}</p>
                 <p className="t-body break-words">{e.detalle}</p>
               </div>
             </li>
@@ -252,21 +252,21 @@ function PanelAdmin() {
   const [confirmar, setConfirmar] = useState(false)
   const porCanal = (['web', 'whatsapp', 'call_center'] as const).map((c) => [c, t ? t.eventos.filter((e) => e.canal === c && !esNotaInterna(e)).length : 0] as const)
   return (
-    <section aria-labelledby="adm-t" className="mt-12 border-t border-[#D6E4F5] pt-8">
-      <h2 id="adm-t" className="flex items-center gap-2 t-card font-head text-[#1F2933]"><Icon n="shield" />Administración de la demo</h2>
-      <p className="mt-1 t-meta text-[#5B6B7A]">Visible solo para el rol Administrador.</p>
+    <section aria-labelledby="adm-t" className="mt-12 border-t border-borde pt-8">
+      <h2 id="adm-t" className="flex items-center gap-2 t-card font-head text-titulo"><Icon n="shield" />Administración de la demo</h2>
+      <p className="mt-1 t-meta text-secundario">Visible solo para el rol Administrador.</p>
       <dl className="mt-4 grid grid-cols-3 gap-4 sm:max-w-lg">
         {porCanal.map(([c, n]) => (
-          <div key={c}><dt className="flex items-center gap-1 t-meta text-[#5B6B7A]"><Icon n={ICONO_CANAL[c]} size={16} />{CANAL[c]}</dt><dd className="font-head t-card text-[#1F2933]">{n}</dd></div>
+          <div key={c}><dt className="flex items-center gap-1 t-meta text-secundario"><Icon n={ICONO_CANAL[c]} size={16} />{CANAL[c]}</dt><dd className="font-head t-card text-titulo">{n}</dd></div>
         ))}
       </dl>
-      <p className="mt-1 t-meta text-[#5B6B7A]">Movimientos del trámite activo por canal.</p>
+      <p className="mt-1 t-meta text-secundario">Movimientos del trámite activo por canal.</p>
       <div className="mt-4" role="status">
         {!confirmar
-          ? <button onClick={() => setConfirmar(true)} disabled={!t} className={`${outlineBtn} disabled:cursor-not-allowed disabled:border-[#D6E4F5] disabled:bg-[#ECF3F9] disabled:text-[#43474A]`}><Icon n="refresh" />Reiniciar demo</button>
+          ? <button onClick={() => setConfirmar(true)} disabled={!t} className={`${outlineBtn} disabled:cursor-not-allowed disabled:border-borde disabled:bg-banda disabled:text-cuerpo`}><Icon n="refresh" />Reiniciar demo</button>
           : (
             <div className="flex flex-wrap items-center gap-x-4">
-              <span className="t-body text-[#1F2933]">¿Borrar el trámite de demostración?</span>
+              <span className="t-body text-titulo">¿Borrar el trámite de demostración?</span>
               <button onClick={() => { setConfirmar(false); reiniciarDemo() }} className={link}>Sí, borrar</button>
               <button onClick={() => setConfirmar(false)} className={link}>Cancelar</button>
             </div>

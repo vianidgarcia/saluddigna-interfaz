@@ -19,9 +19,9 @@ function Hero() {
   const { go, toast, startAgendar, sesion } = useApp()
   const quickAct = (t: string) => (t === 'Agendar cita' ? startAgendar() : t === 'Mis resultados' ? go('resultados') : toast())
   return (
-    <div className="bg-[#ECF3F9] pb-10 pt-8 lg:pb-16 lg:pt-12">
+    <div className="bg-banda pb-10 pt-8 lg:pb-16 lg:pt-12">
       <div className={container}>
-        <h1 className="t-greeting font-head text-[#1F2933]">{sesion ? `Hola, ${sesion.nombre}` : 'Agenda tus estudios en Salud Digna'}</h1>
+        <h1 className="t-greeting font-head text-titulo">{sesion ? `Hola, ${sesion.nombre}` : 'Agenda tus estudios en Salud Digna'}</h1>
         <div className="mt-6 grid gap-6 lg:grid-cols-12 lg:items-stretch lg:gap-8">
           <div className="lg:col-span-7"><ContinueCard /></div>
           <div className="lg:col-span-5"><Search /></div>
@@ -30,9 +30,9 @@ function Hero() {
           <h2 id="acc-t" className="sr-only">Acciones rápidas</h2>
           <ul id="servicios" className="mt-10 scroll-mt-24 grid grid-cols-2 gap-x-4 gap-y-8 lg:mt-16 lg:grid-cols-4 lg:gap-8">
             {QUICK.map(([i, t, d]) => (
-              <li key={t} className="group relative -m-2 rounded-lg p-2 transition-colors hover:bg-[#EBF4FC] has-[:active]:bg-[#D6E4F5]">
-                <Icon n={i} size={28} className="text-[#0074D9]" />
-                <h3 className="mt-3 font-head t-card text-[#1F2933] group-hover:text-[#005BB0]">
+              <li key={t} className="group relative -m-2 rounded-lg p-2 transition-colors hover:bg-resaltado has-[:active]:bg-resaltado-2">
+                <Icon n={i} size={28} className="text-icono" />
+                <h3 className="mt-3 font-head t-card text-titulo group-hover:text-enlace">
                   <button onClick={() => quickAct(t)} className="rounded-md text-left after:absolute after:inset-0 after:content-['']">{t}</button>
                 </h3>
                 <p className="mt-1 t-body">{d}</p>
@@ -50,10 +50,10 @@ function ClinicRow({ clinic }: { clinic: Clinic }) {
   const { openClinics } = useApp()
   return (
     <section aria-label="Tu clínica" className={`${container} pt-10 lg:pt-16`}>
-      <div className="flex flex-col gap-2 border-t border-[#D6E4F5] pt-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
-        <p className="flex items-start gap-3 t-body text-[#43474A]">
-          <Icon n="pin" className="mt-0.5 text-[#0074D9]" />
-          <span>Tu clínica: <strong className="font-bold text-[#1F2933]">{clinic.name}</strong> · {clinic.ciudad}, {clinic.estado}</span>
+      <div className="flex flex-col gap-2 border-t border-borde pt-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+        <p className="flex items-start gap-3 t-body text-cuerpo">
+          <Icon n="pin" className="mt-0.5 text-icono" />
+          <span>Tu clínica: <strong className="font-bold text-titulo">{clinic.name}</strong> · {clinic.ciudad}, {clinic.estado}</span>
         </p>
         <div className="flex flex-wrap gap-x-6">
           {clinic.phone && <a href={tel(clinic.phone)} className={link}><Icon n="phone" />Llamar{NB}{clinic.phone.replace(/ /g, NB)}</a>}

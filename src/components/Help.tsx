@@ -3,10 +3,10 @@ import { WA, NB, container, outlineBtn, link } from './ui'
 
 export function Help() {
   return (
-    <div id="ayuda" className="mt-10 scroll-mt-24 bg-[#ECF3F9] py-10 lg:mt-16 lg:py-12">
+    <div id="ayuda" className="mt-10 scroll-mt-24 bg-banda py-10 lg:mt-16 lg:py-12">
       <section aria-labelledby="ayuda-t" className={`${container} flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between`}>
         <div>
-          <h2 id="ayuda-t" className="t-section font-head text-[#1F2933]">¿Necesitas ayuda?</h2>
+          <h2 id="ayuda-t" className="t-section font-head text-titulo">¿Necesitas ayuda?</h2>
           <p className="mt-1 t-body">Asistente por WhatsApp 24/7 · Asesores de 7:00 a 21:00</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">

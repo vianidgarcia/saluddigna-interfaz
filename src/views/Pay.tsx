@@ -24,7 +24,7 @@ export function Pay() {
     return (
       <div className={`${container} py-8 lg:py-12`}>
         <Back />
-        <h1 className="mt-4 t-greeting font-head text-[#1F2933]">No tienes pagos pendientes</h1>
+        <h1 className="mt-4 t-greeting font-head text-titulo">No tienes pagos pendientes</h1>
         <p className="mt-4 max-w-xl t-body">Cuando elijas pagar en Oxxo al agendar, aquí verás tu referencia.</p>
         <button onClick={() => startAgendar()} className={`${outlineBtn} mt-6`}><Icon n="calendar" />Agendar cita</button>
       </div>
@@ -45,33 +45,33 @@ export function Pay() {
   return (
     <div className={`${container} py-8 lg:py-12`}>
       <Back />
-      <h1 className="mt-4 t-greeting font-head text-[#1F2933]">Paso {TOTAL_PASOS} de {TOTAL_PASOS} · Paga en{NB}Oxxo</h1>
+      <h1 className="mt-4 t-greeting font-head text-titulo">Paso {TOTAL_PASOS} de {TOTAL_PASOS} · Paga en{NB}Oxxo</h1>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <p className="t-body text-[#1F2933]">{t.estudio?.nombre} · {t.clinica}</p>
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#FDF1DB] px-3 py-1 t-meta font-semibold text-[#7A4E00]"><span aria-hidden="true" className="size-2 rounded-full bg-[#F2A00D]" />Pago pendiente</span>
+        <p className="t-body text-titulo">{t.estudio?.nombre} · {t.clinica}</p>
+        <span className="inline-flex items-center gap-2 rounded-full bg-ambar-fondo px-3 py-1 t-meta font-semibold text-ambar-texto"><span aria-hidden="true" className="size-2 rounded-full bg-ambar" />Pago pendiente</span>
       </div>
-      <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={TOTAL_PASOS} aria-valuetext={`Paso ${TOTAL_PASOS} de ${TOTAL_PASOS}: pago pendiente`} aria-label="Avance del trámite" className="mt-6 h-2 max-w-xl rounded-full bg-[#EBF4FC]"><div className="h-full rounded-full bg-[#005BB0]" style={{ width: `${avance(TOTAL_PASOS)}%` }} /></div>
+      <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={TOTAL_PASOS} aria-valuetext={`Paso ${TOTAL_PASOS} de ${TOTAL_PASOS}: pago pendiente`} aria-label="Avance del trámite" className="mt-6 h-2 max-w-xl rounded-full bg-resaltado"><div className="h-full rounded-full bg-accion-hover" style={{ width: `${avance(TOTAL_PASOS)}%` }} /></div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-12">
-        <section aria-labelledby="ref-t" className="rounded-2xl border border-[#D6E4F5] bg-white p-6 shadow-[0_8px_24px_-4px_rgba(0,68,128,0.16)] lg:col-span-7 lg:p-8">
-          <h2 id="ref-t" className="t-card font-head text-[#1F2933]">Tu referencia de pago</h2>
-          <p className="mt-1 t-meta text-[#5B6B7A]">Referencia de ejemplo</p>
-          <p className="mt-3 font-mono text-[22px] font-semibold tracking-wide text-[#1F2933] min-[400px]:text-[24px] sm:text-[28px] lg:text-[32px]">{REF.replace(/ /g, NB)}</p>
+        <section aria-labelledby="ref-t" className="rounded-2xl border border-borde bg-superficie p-6 shadow-[0_8px_24px_-4px_rgba(0,68,128,0.16)] lg:col-span-7 lg:p-8">
+          <h2 id="ref-t" className="t-card font-head text-titulo">Tu referencia de pago</h2>
+          <p className="mt-1 t-meta text-secundario">Referencia de ejemplo</p>
+          <p className="mt-3 font-mono text-[22px] font-semibold tracking-wide text-titulo min-[400px]:text-[24px] sm:text-[28px] lg:text-[32px]">{REF.replace(/ /g, NB)}</p>
           <button onClick={copy} className={`${outlineBtn} mt-4`}><Icon n={copied ? 'check' : 'copy'} />{copied ? 'Referencia copiada' : 'Copiar referencia'}</button>
           <p role="status" className="sr-only">{copied ? 'Referencia copiada' : ''}</p>
-          <dl className="mt-6 grid gap-3 border-t border-[#D6E4F5] pt-6 t-body">
-            <div><dt className="t-meta text-[#5B6B7A]">Monto</dt><dd className="font-semibold text-[#1F2933]">
+          <dl className="mt-6 grid gap-3 border-t border-borde pt-6 t-body">
+            <div><dt className="t-meta text-secundario">Monto</dt><dd className="font-semibold text-titulo">
               {t.estudio?.precio
-                ? <>{t.estudio.precio} <span className="t-meta font-normal text-[#5B6B7A]">(IVA incluido)</span></>
-                : <>$350 <span className="t-meta font-normal text-[#5B6B7A]">(monto de ejemplo)</span></>}
+                ? <>{t.estudio.precio} <span className="t-meta font-normal text-secundario">(IVA incluido)</span></>
+                : <>$350 <span className="t-meta font-normal text-secundario">(monto de ejemplo)</span></>}
             </dd></div>
-            <div><dt className="t-meta text-[#5B6B7A]">Paga antes de tu cita</dt><dd className="font-semibold text-[#1F2933] first-letter:uppercase">
-              {t.fecha ? `${fechaLarga(t.fecha)}, ${t.hora}` : '—'} <span className="t-meta font-normal text-[#5B6B7A]">(horario de demostración)</span>
+            <div><dt className="t-meta text-secundario">Paga antes de tu cita</dt><dd className="font-semibold text-titulo first-letter:uppercase">
+              {t.fecha ? `${fechaLarga(t.fecha)}, ${t.hora}` : '—'} <span className="t-meta font-normal text-secundario">(horario de demostración)</span>
             </dd></div>
           </dl>
         </section>
         <section aria-labelledby="pasos-t" className="lg:col-span-5">
-          <h2 id="pasos-t" className="t-card font-head text-[#1F2933]">Cómo pagar</h2>
+          <h2 id="pasos-t" className="t-card font-head text-titulo">Cómo pagar</h2>
           <ol className="mt-4 flex flex-col gap-3 t-body">
             <li>1. Acude a cualquier Oxxo.</li>
             <li>2. Indica que harás un pago de servicio.</li>
