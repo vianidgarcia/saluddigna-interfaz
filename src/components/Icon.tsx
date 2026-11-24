@@ -23,6 +23,7 @@ export const P: Record<string, string> = {
   headset: '<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="14" width="4" height="6" rx="1"/><rect x="17" y="14" width="4" height="6" rx="1"/><path d="M21 19a3 3 0 0 1-3 3h-4"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
   note: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  download: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
   nav: '<path d="m3 11 19-9-9 19-2-8z"/>',
 }
 export function Icon({ n, size = 20, className = '' }: { n: string; size?: number; className?: string }) {
