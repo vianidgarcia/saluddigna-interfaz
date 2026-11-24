@@ -6,10 +6,10 @@ import { BotonTema } from '../components/Tema'
 import { container, link, outlineBtn, solidBtn } from '../components/ui'
 import { CREDENCIALES, ROL, entrar, type Rol, type Sesion } from '../state/sesion'
 
-const ICONO_ROL: Record<Rol, string> = { paciente: 'user', asesor: 'headset', admin: 'shield' }
+const ICONO_ROL: Record<Rol, string> = { asesor: 'headset', admin: 'shield' }
 const fieldInput = 'h-12 w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion aria-[invalid=true]:border-2 aria-[invalid=true]:border-error'
 
-export function Entrar({ onEntrar, onVolver, rolInicial = 'paciente', motivo }: {
+export function Entrar({ onEntrar, onVolver, rolInicial = 'asesor', motivo }: {
   onEntrar: (s: Sesion) => void; onVolver: () => void; rolInicial?: Rol; motivo?: string
 }) {
   const [rol, setRol] = useState<Rol>(rolInicial)
@@ -45,12 +45,12 @@ export function Entrar({ onEntrar, onVolver, rolInicial = 'paciente', motivo }: 
         <div className="mt-4 grid gap-8 lg:grid-cols-12 lg:gap-8">
           <section aria-labelledby="entrar-t" className="rounded-2xl bg-superficie p-6 lg:col-span-7 lg:p-10">
             <h1 id="entrar-t" className="t-greeting font-head text-titulo">Entrar</h1>
-            <p className="mt-2 t-body">Cada rol ve su propia vista: el paciente, su portal; asesor y administrador, la atención al paciente.</p>
+            <p className="mt-2 t-body">Acceso para el personal de Salud Digna. Los pacientes no necesitan cuenta: agendan y retoman su trámite desde el portal.</p>
 
             <fieldset className="mt-6">
               <legend className="text-base font-semibold text-titulo">Entrar como</legend>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                {(['paciente', 'asesor', 'admin'] as Rol[]).map((r) => (
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {(['asesor', 'admin'] as Rol[]).map((r) => (
                   <label key={r} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-lg border border-borde px-4 py-3 transition-colors hover:border-borde-accion has-[:checked]:border-enlace has-[:checked]:bg-resaltado">
                     <input type="radio" name="rol" checked={rol === r} onChange={() => { setRol(r); setError(null) }} className="size-5 shrink-0 accent-accion-hover" />
                     <Icon n={ICONO_ROL[r]} className="text-enlace" />

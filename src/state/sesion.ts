@@ -1,16 +1,16 @@
 /* Acceso por rol simulado. Credenciales de demostración: no hay autenticación real. */
 
-export type Rol = 'paciente' | 'asesor' | 'admin'
+/** Solo el personal inicia sesión; el paciente usa el portal sin cuenta. */
+export type Rol = 'asesor' | 'admin'
 export type Sesion = { rol: Rol; correo: string; nombre: string; inicio: string }
 
 export const SESION_KEY = 'sd_sesion'
 /** copia por pestaña: permite tener Paciente y Asesor abiertos a la vez en dos pestañas */
 const SESION_TAB_KEY = 'sd_sesion_pestana'
 
-export const ROL: Record<Rol, string> = { paciente: 'Paciente', asesor: 'Asesor', admin: 'Administrador' }
+export const ROL: Record<Rol, string> = { asesor: 'Asesor', admin: 'Administrador' }
 
 export const CREDENCIALES: { rol: Rol; correo: string; clave: string; nombre: string; descripcion: string }[] = [
-  { rol: 'paciente', correo: 'ana@demo.mx', clave: 'demo123', nombre: 'Ana', descripcion: 'Portal del paciente: agenda, pagos y resultados.' },
   { rol: 'asesor', correo: 'asesor@demo.mx', clave: 'demo123', nombre: 'Asesor Call Center', descripcion: 'Atención al paciente: ficha, línea de tiempo y acciones.' },
   { rol: 'admin', correo: 'admin@demo.mx', clave: 'demo123', nombre: 'Administración', descripcion: 'Lo mismo que el asesor, más el control de la demo.' },
 ]
@@ -19,7 +19,7 @@ const parse = (raw: string | null): Sesion | null => {
   if (!raw) return null
   try {
     const s = JSON.parse(raw) as Sesion
-    return s && (s.rol === 'paciente' || s.rol === 'asesor' || s.rol === 'admin') ? s : null
+    return s && (s.rol === 'asesor' || s.rol === 'admin') ? s : null
   } catch {
     return null
   }

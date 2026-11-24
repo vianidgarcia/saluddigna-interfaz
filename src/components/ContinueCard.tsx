@@ -10,25 +10,12 @@ const primario = solidBtn
 const enlace = `${link} justify-center underline`
 
 export function ContinueCard() {
-  const { tramite: t, continuar, startAgendar, sesion, abrirEntrar } = useApp()
+  const { tramite: t, continuar, startAgendar } = useApp()
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), TICK_MS)
     return () => window.clearInterval(id)
   }, [])
-
-  if (!sesion) {
-    return (
-      <section aria-labelledby="continua" className={card}>
-        <h2 id="continua" className="font-head t-card text-titulo">Una sola conversación, en todos tus canales</h2>
-        <p className="mt-3 t-body">Inicia sesión para agendar tus estudios y retomar tus trámites donde te quedaste: en la web, por WhatsApp o con nuestro Call Center.</p>
-        <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6 lg:mt-auto lg:pt-8">
-          <button onClick={() => abrirEntrar('paciente')} className={primario}><Icon n="user" />Iniciar sesión</button>
-          <a href={WA} target="_blank" rel="noopener" className={enlace}><Icon n="chat" />Escríbenos por WhatsApp</a>
-        </div>
-      </section>
-    )
-  }
 
   if (!t) {
     return (

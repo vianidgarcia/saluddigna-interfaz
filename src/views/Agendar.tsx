@@ -71,20 +71,31 @@ function Flujo({ t }: { t: Tramite }) {
   if (paso === 4) {
     falta = !t.clinica ? 'Elige una clínica para confirmar tu cita (toca “Cambiar” en Clínica).'
       : !t.fecha || !t.hora || yaPaso(t.fecha, t.hora) ? 'La fecha u hora de tu cita ya pasó: toca “Cambiar” en Fecha y hora.'
-        : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
+        : !t.paciente.nombre?.trim() ? 'Escribe a nombre de quién es la cita para continuar.'
+          : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
   }
 
+  // pago en clínica: se confirma al momento; los demás pasan por la pasarela simulada (vista Pago)
+  const INICIO_PAGO: Partial<Record<MetodoPago, [string, string]>> = {
+    en_linea: ['pago.iniciado', 'Inició el pago con tarjeta en la pasarela (simulada)'],
+    oxxo: ['pago.referencia_generada', 'Referencia de pago en Oxxo generada (demo)'],
+    spei: ['pago.datos_transferencia', 'Datos de transferencia SPEI generados (demo)'],
+  }
   const confirmar = () => {
-    if (t.metodoPago === 'oxxo') {
-      update((x) => conEvento({ ...x, estado: 'pago_pendiente', desdeResumen: false }, 'pago.referencia_generada', 'Referencia de pago en Oxxo generada (demo)'))
+    const inicio = t.metodoPago && INICIO_PAGO[t.metodoPago]
+    if (inicio) {
+      update((x) => conEvento({ ...x, estado: 'pago_pendiente', desdeResumen: false, pago: { estado: 'pendiente', intentos: 0 } }, inicio[0], inicio[1], 'pasarela'))
       go('pay')
       return
     }
     update((x) => conEvento({ ...x, estado: 'confirmada', desdeResumen: false }, 'cita.confirmada', `${METODO[x.metodoPago!]} · ${x.fecha ? fechaLarga(x.fecha) : ''} ${x.hora ?? ''}`))
     window.scrollTo(0, 0)
   }
+  const PRIMARIO: Record<MetodoPago, string> = {
+    en_linea: 'Continuar al pago con tarjeta', oxxo: 'Generar referencia de pago', spei: 'Generar datos de transferencia', en_clinica: 'Confirmar cita',
+  }
   const primario = paso === TOTAL_PASOS
-    ? (t.metodoPago === 'oxxo' ? 'Generar referencia de pago' : 'Confirmar cita')
+    ? (t.metodoPago ? PRIMARIO[t.metodoPago] : 'Confirmar cita')
     : t.desdeResumen ? 'Guardar y continuar' : 'Continuar'
 
   return (
@@ -226,10 +237,11 @@ function PasoFecha({ t }: { t: Tramite }) {
 }
 
 /* ---------- paso 4: resumen editable + pago ---------- */
-const OPCIONES: [MetodoPago, string][] = [
-  ['en_linea', 'Con tarjeta de débito o crédito. En esta demo el cobro es simulado.'],
-  ['oxxo', 'Te damos una referencia para pagar en efectivo en cualquier Oxxo.'],
-  ['en_clinica', 'Pagas en recepción el día de tu cita.'],
+const OPCIONES: [MetodoPago, string, string][] = [
+  ['en_linea', 'tarjeta', 'Visa, Mastercard o American Express. Pasarela simulada: no se hace ningún cobro.'],
+  ['oxxo', 'tienda', 'Te damos una referencia para pagar en efectivo en cualquier Oxxo.'],
+  ['spei', 'banco', 'Te damos una CLABE y una referencia para transferir desde tu banco.'],
+  ['en_clinica', 'pin', 'Pagas en recepción el día de tu cita.'],
 ]
 
 function Resumen({ t, onCambiar }: { t: Tramite; onCambiar?: (p: Paso) => void }) {
@@ -260,6 +272,13 @@ function PasoPago({ t, onCambiar }: { t: Tramite; onCambiar: (p: Paso) => void }
   const { update } = useApp()
   return (
     <>
+      <div className="mb-8">
+        <label htmlFor="nombre-paciente" className="text-base font-semibold text-titulo">¿A nombre de quién es la cita?</label>
+        <p id="nombre-h" className="t-meta text-secundario">No necesitas cuenta. Con este nombre y tu folio te atendemos en la clínica, por WhatsApp o en el Call Center.</p>
+        <input id="nombre-paciente" autoComplete="name" value={t.paciente.nombre ?? ''} aria-describedby="nombre-h"
+          onChange={(e) => update((x) => ({ ...x, paciente: { ...x.paciente, nombre: e.target.value } }))}
+          placeholder="Nombre y apellidos" className="mt-2 h-12 w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion sm:max-w-md" />
+      </div>
       <section aria-labelledby="res-t" className="rounded-2xl border border-borde bg-superficie p-6">
         <h3 id="res-t" className="t-sub font-bold text-titulo">Resumen de tu cita</h3>
         <div className="mt-4"><Resumen t={t} onCambiar={onCambiar} /></div>
@@ -267,10 +286,11 @@ function PasoPago({ t, onCambiar }: { t: Tramite; onCambiar: (p: Paso) => void }
       <fieldset className="mt-8">
         <legend className="text-base font-semibold text-titulo">¿Cómo quieres pagar?</legend>
         <div className="mt-2 flex flex-col gap-2">
-          {OPCIONES.map(([m, d]) => (
+          {OPCIONES.map(([m, ic, d]) => (
             <label key={m} className={`${optionRow} border-borde hover:border-borde-accion`}>
               <input type="radio" name="pago" className={radio} checked={t.metodoPago === m}
                 onChange={() => update((x) => ({ ...x, metodoPago: m }))} />
+              <Icon n={ic} className="mt-0.5 text-icono" />
               <span><span className="block text-base font-semibold text-titulo">{METODO[m]}</span><span className="block t-meta text-secundario">{d}</span></span>
             </label>
           ))}
@@ -293,13 +313,18 @@ function Confirmada({ t }: { t: Tramite }) {
           <Icon n="check" size={36} />Cita confirmada
         </h1>
         <p role="status" className="mt-2 t-body text-titulo">
-          Guardamos los detalles en Mis trámites. {t.metodoPago === 'en_clinica' ? 'Pagas en recepción el día de tu cita.' : 'Pago en línea simulado: no se hizo ningún cobro.'}
+          {t.paciente.nombre ? `${t.paciente.nombre}, guardamos` : 'Guardamos'} los detalles en Mis trámites con tu folio {t.id}.{' '}
+          {t.metodoPago === 'en_clinica' ? 'Pagas en recepción el día de tu cita.' : t.pago?.estado === 'aprobado' ? 'Tu pago quedó registrado (simulación: no se hizo ningún cobro).' : ''}
         </p>
         <section aria-labelledby="conf-t" className="mt-6 rounded-2xl border border-borde bg-superficie p-6">
           <h2 id="conf-t" className="t-sub font-bold text-titulo">Detalles de tu cita</h2>
           <div className="mt-4"><Resumen t={t} /></div>
           <dl className="mt-3 grid gap-3 border-t border-borde pt-3 sm:grid-cols-2">
-            <div><dt className="t-meta text-secundario">Pago</dt><dd className="t-body font-semibold text-titulo">{t.metodoPago ? METODO[t.metodoPago] : '—'}</dd></div>
+            <div><dt className="t-meta text-secundario">Pago</dt><dd className="t-body font-semibold text-titulo">{t.metodoPago ? METODO[t.metodoPago] : '—'}
+              {t.pago?.estado === 'aprobado' && <span className="block t-meta font-normal text-secundario">
+                Aprobado{t.pago.tarjeta && ` · ${t.pago.tarjeta.marca} •••• ${t.pago.tarjeta.ultimos4}`}{t.pago.autorizacion && ` · Autorización ${t.pago.autorizacion} (de ejemplo)`}
+              </span>}</dd></div>
+            {t.paciente.nombre && <div><dt className="t-meta text-secundario">A nombre de</dt><dd className="t-body font-semibold text-titulo">{t.paciente.nombre}</dd></div>}
             <div><dt className="t-meta text-secundario">Folio</dt><dd className="t-body font-semibold text-titulo">{t.id} <span className="t-meta font-normal text-secundario">(folio de ejemplo)</span></dd></div>
           </dl>
         </section>

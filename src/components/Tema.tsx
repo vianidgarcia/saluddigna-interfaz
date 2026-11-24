@@ -43,7 +43,7 @@ export function BotonTema({ className = '' }: { className?: string }) {
   const oscuro = tema === 'oscuro'
   return (
     <button onClick={alternar}
-      className={`inline-flex min-h-12 items-center gap-2 rounded-md px-3 text-base font-semibold text-titulo transition-colors hover:bg-resaltado hover:text-enlace active:bg-resaltado-2 ${className}`}>
+      className={`inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-md px-3 text-base font-semibold text-titulo transition-colors hover:bg-resaltado hover:text-enlace active:bg-resaltado-2 ${className}`}>
       <Icon n={oscuro ? 'sol' : 'luna'} />{oscuro ? 'Modo claro' : 'Modo oscuro'}
     </button>
   )

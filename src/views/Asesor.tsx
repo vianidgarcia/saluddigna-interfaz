@@ -16,7 +16,10 @@ const sinAcentos = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 function coincide(t: Tramite, q: string): boolean {
   const texto = sinAcentos(q.trim())
   if (!texto) return false
-  return sinAcentos(t.paciente.nombre).includes(texto) || t.paciente.cuenta.toLowerCase().includes(texto)
+  // por folio (con o sin "SD-") o por el nombre con el que se agendó la cita
+  const folio = texto.replace(/^sd-?/, '').replace(/[^a-z0-9]/g, '')
+  if (folio && t.id.toLowerCase().replace(/^sd-/, '').includes(folio)) return true
+  return !!t.paciente.nombre && sinAcentos(t.paciente.nombre).includes(texto)
 }
 
 const Pendiente = ({ children }: { children: ReactNode }) => (
@@ -41,26 +44,26 @@ export function Asesor() {
       <p className="mt-2 max-w-3xl t-body">Busca al paciente y retoma su trámite con todo lo que ya hizo en web, WhatsApp o Call Center, sin volver a pedirle sus datos.</p>
 
       <section className="mt-6 max-w-3xl">
-        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-titulo">Buscar paciente por nombre o cuenta</label>
+        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-titulo">Buscar por folio o nombre del paciente</label>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secundario" />
             <input id="buscar" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && buscar()}
-              aria-describedby="buscar-h" placeholder="Ej. Ana o ana@demo.mx" className={`${fieldInput} h-12 pl-12`} />
+              aria-describedby="buscar-h" placeholder="Ej. SD-MXK3A9 o María López" className={`${fieldInput} h-12 pl-12`} />
           </div>
           <button onClick={buscar} className={outlineBtn}><Icon n="search" />Buscar</button>
         </div>
-        <p id="buscar-h" className="mt-1 t-meta text-secundario">Prueba con “Ana” o con su cuenta del portal (ana@demo.mx).</p>
+        <p id="buscar-h" className="mt-1 t-meta text-secundario">El paciente ve su folio en “Mis trámites” y en su tarjeta de inicio; el nombre es el que escribió al confirmar.</p>
 
         <div role="status" className="mt-4">
           {!t && <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">No hay trámites activos. Inicia uno desde el portal del paciente.</p>}
-          {t && buscado !== null && !encontrado && <p className="t-body text-titulo">No encontramos pacientes con “{buscado}”. Revisa el nombre o la cuenta.</p>}
+          {t && buscado !== null && !encontrado && <p className="t-body text-titulo">No encontramos pacientes con “{buscado}”. Revisa el folio o el nombre.</p>}
         </div>
         {t && encontrado && (
           <ul aria-label="Resultados de búsqueda">
             <li className="flex flex-col gap-2 border-y border-borde py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="t-sub font-bold text-titulo">{t.paciente.nombre}<span className="font-normal text-cuerpo"> · {t.paciente.cuenta}</span></p>
+                <p className="t-sub font-bold text-titulo">{t.paciente.nombre ?? 'Paciente sin nombre registrado'}<span className="font-normal text-cuerpo"> · Folio {t.id}</span></p>
                 <p className="t-meta text-secundario">{t.estudio?.nombre ?? 'Estudio por elegir'} · Folio {t.id} (de ejemplo)</p>
               </div>
               <button onClick={() => setAbierta(true)} aria-pressed={abierta} className={`${link} shrink-0`}>{abierta ? 'Ficha abierta' : 'Abrir ficha'}<Icon n="arrow" /></button>
@@ -106,7 +109,7 @@ function Ficha({ t }: { t: Tramite }) {
     avisar(`Cita reagendada: ${fechaLarga(nf)}, ${nh}`)
   }
   const reenviarReferencia = () => {
-    update((x) => conEvento(x, 'pago.referencia_enviada', `${autor} reenvió la referencia de pago en Oxxo por WhatsApp (demo)`, 'call_center'))
+    update((x) => conEvento(x, 'pago.referencia_enviada', `${autor} reenvió ${x.metodoPago === 'spei' ? 'los datos de transferencia SPEI' : 'la referencia de pago en Oxxo'} por WhatsApp (demo)`, 'call_center'))
     avisar('Referencia enviada')
   }
   const cerrar = () => {
@@ -129,8 +132,8 @@ function Ficha({ t }: { t: Tramite }) {
         <section aria-labelledby="fp-t" className="rounded-2xl border border-borde bg-superficie p-6">
           <h2 id="fp-t" className="t-card font-head text-titulo">Ficha del paciente</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div><dt className="t-meta text-secundario">Nombre</dt><dd className="t-body font-semibold text-titulo">{p.nombre}</dd></div>
-            <div><dt className="t-meta text-secundario">Cuenta del portal</dt><dd className="t-body font-semibold text-titulo break-words">{p.cuenta}</dd></div>
+            <div><dt className="t-meta text-secundario">Nombre</dt><dd className="t-body font-semibold text-titulo">{p.nombre ?? 'Aún sin nombre (se pide al confirmar)'}</dd></div>
+            <div><dt className="t-meta text-secundario">Folio del trámite</dt><dd className="t-body font-semibold text-titulo">{t.id} <span className="t-meta font-normal text-secundario">(de ejemplo)</span></dd></div>
           </dl>
         </section>
 
@@ -152,7 +155,11 @@ function Ficha({ t }: { t: Tramite }) {
             <Fila k="Estudio">{t.estudio?.nombre ?? <Pendiente>Sin elegir</Pendiente>}</Fila>
             <Fila k="Clínica">{c ? <>{c.name}<span className="block t-meta font-normal text-secundario">{c.address}</span></> : <Pendiente>Pendiente</Pendiente>}</Fila>
             <Fila k="Fecha y hora">{t.fecha && t.hora ? <span className="first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}</span> : <Pendiente>Sin elegir</Pendiente>}</Fila>
-            <Fila k="Método de pago">{t.metodoPago ? METODO[t.metodoPago] : <Pendiente>Sin elegir</Pendiente>}</Fila>
+            <Fila k="Método de pago">{t.metodoPago ? <>{METODO[t.metodoPago]}
+              {t.pago && <span className="block t-meta font-normal text-secundario">
+                {t.pago.estado === 'aprobado' ? `Pago aprobado${t.pago.tarjeta ? ` · ${t.pago.tarjeta.marca} •••• ${t.pago.tarjeta.ultimos4}` : ''}${t.pago.autorizacion ? ` · autorización ${t.pago.autorizacion}` : ''}`
+                  : t.pago.estado === 'rechazado' ? `Último intento rechazado: ${t.pago.motivo ?? ''}` : 'Pago pendiente'}
+              </span>}</> : <Pendiente>Sin elegir</Pendiente>}</Fila>
             <Fila k="Canales">Inició en {CANAL[t.canalInicio]} · último movimiento por {CANAL[t.ultimoCanal]}, {hace(t.ultimaActualizacion)}</Fila>
           </dl>
         </section>
@@ -169,7 +176,7 @@ function Ficha({ t }: { t: Tramite }) {
               <div className="mt-4 flex flex-wrap gap-3">
                 {!t.clinica && <button onClick={() => setClinicas(true)} className={outlineBtn}><Icon n="pin" />Confirmar clínica</button>}
                 <button onClick={() => { setReagendar(!reagendar); setNf(t.fecha); setNh(t.hora) }} aria-expanded={reagendar} aria-controls={reagendar ? 'reag' : undefined} className={outlineBtn}><Icon n="calendar" />Reagendar</button>
-                {t.metodoPago === 'oxxo' && <button onClick={reenviarReferencia} className={outlineBtn}><Icon n="chat" />Reenviar referencia por WhatsApp</button>}
+                {(t.metodoPago === 'oxxo' || t.metodoPago === 'spei') && t.estado === 'pago_pendiente' && <button onClick={reenviarReferencia} className={outlineBtn}><Icon n="chat" />{t.metodoPago === 'spei' ? 'Reenviar datos de transferencia por WhatsApp' : 'Reenviar referencia por WhatsApp'}</button>}
               </div>
               {reagendar && (
                 <div id="reag" className="mt-4 border-t border-borde pt-4">

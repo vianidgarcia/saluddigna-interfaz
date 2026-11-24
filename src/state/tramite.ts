@@ -1,7 +1,16 @@
 /* Estado del trámite: simula al orquestador omnicanal. Todo es de demostración. */
 
-export type Canal = 'web' | 'whatsapp' | 'call_center' | 'clinica'
-export type MetodoPago = 'en_linea' | 'oxxo' | 'en_clinica'
+export type Canal = 'web' | 'whatsapp' | 'call_center' | 'clinica' | 'pasarela'
+export type MetodoPago = 'en_linea' | 'oxxo' | 'spei' | 'en_clinica'
+/** Pago simulado (pasarela de demostración). Nunca se guardan número completo ni CVV: solo marca y últimos 4. */
+export type Pago = {
+  estado: 'pendiente' | 'aprobado' | 'rechazado'
+  intentos: number
+  autorizacion?: string
+  tarjeta?: { marca: string; ultimos4: string }
+  motivo?: string
+  fecha?: string
+}
 export type Paso = 1 | 2 | 3 | 4
 export const TOTAL_PASOS = 4
 export const LISTA_PASOS: Paso[] = [1, 2, 3, 4]
@@ -17,9 +26,10 @@ export type Tramite = {
   clinicaPendiente: boolean
   fecha: string | null // AAAA-MM-DD
   hora: string | null // HH:MM
-  /** el paciente se identifica por su cuenta del portal (sesión), no por número de teléfono */
-  paciente: { nombre: string; cuenta: string }
+  /** sin cuenta ni teléfono: el trámite se identifica por su folio (id); el nombre se pide al confirmar la cita */
+  paciente: { nombre: string | null }
   metodoPago: MetodoPago | null
+  pago?: Pago | null
   paso: Paso
   estado: Estado
   /** el paciente entró a editar un dato desde el resumen del último paso */
@@ -44,11 +54,20 @@ export const CANAL: Record<Canal, string> = {
   whatsapp: 'WhatsApp',
   call_center: 'Call Center',
   clinica: 'clínica',
+  pasarela: 'Pasarela de pago',
 }
 
 export const METODO: Record<MetodoPago, string> = {
-  en_linea: 'Pago en línea',
-  oxxo: 'Pago en Oxxo',
+  en_linea: 'Tarjeta de crédito o débito',
+  oxxo: 'Efectivo en tienda (Oxxo)',
+  spei: 'Transferencia SPEI',
+  en_clinica: 'Pago en clínica',
+}
+/** Texto del pago pendiente según el método (tarjeta de inicio, Mis trámites, asesor). */
+export const PAGO_PENDIENTE: Record<MetodoPago, string> = {
+  en_linea: 'Pago con tarjeta pendiente',
+  oxxo: 'Pago pendiente en\u00a0Oxxo',
+  spei: 'Transferencia pendiente',
   en_clinica: 'Pago en clínica',
 }
 
@@ -59,11 +78,11 @@ export function loadTramite(): Tramite | null {
     const t = JSON.parse(raw) as Tramite
     if (!t || !t.id || !Array.isArray(t.eventos)) return null
     // trámites guardados con la versión de 5 pasos (incluía identificación por WhatsApp)
-    const viejo = t as unknown as { paso: number; paciente: { nombre?: string; cuenta?: string } }
+    const viejo = t as unknown as { paso: number; paciente?: { nombre?: string | null } }
     return {
       ...t,
       paso: Math.min(Math.max(viejo.paso, 1), TOTAL_PASOS) as Paso,
-      paciente: { nombre: viejo.paciente?.nombre ?? 'Ana', cuenta: viejo.paciente?.cuenta ?? 'ana@demo.mx' },
+      paciente: { nombre: viejo.paciente?.nombre ?? null },
     }
   } catch {
     return null
@@ -79,7 +98,7 @@ export function saveTramite(t: Tramite | null) {
   }
 }
 
-export function nuevoTramite(canal: Canal = 'web', paciente = { nombre: 'Ana', cuenta: 'ana@demo.mx' }): Tramite {
+export function nuevoTramite(canal: Canal = 'web'): Tramite {
   const now = new Date().toISOString()
   return {
     id: 'SD-' + Date.now().toString(36).toUpperCase(),
@@ -88,7 +107,7 @@ export function nuevoTramite(canal: Canal = 'web', paciente = { nombre: 'Ana', c
     clinicaPendiente: false,
     fecha: null,
     hora: null,
-    paciente,
+    paciente: { nombre: null },
     metodoPago: null,
     paso: 1,
     estado: 'en_curso',
@@ -138,12 +157,12 @@ export const PENDIENTE: Record<Paso, string> = {
   4: 'Elige cómo pagar',
 }
 
-export const ICONO_CANAL: Record<Canal, string> = { web: 'globe', whatsapp: 'chat', call_center: 'phone', clinica: 'pin' }
+export const ICONO_CANAL: Record<Canal, string> = { web: 'globe', whatsapp: 'chat', call_center: 'phone', clinica: 'pin', pasarela: 'tarjeta' }
 
 /** Texto de estado corto para la tarjeta y Mis trámites. */
 export function estadoTexto(t: Tramite): string {
   if (t.estado === 'confirmada') return 'Cita confirmada'
-  if (t.estado === 'pago_pendiente') return 'Pago pendiente en Oxxo'
+  if (t.estado === 'pago_pendiente') return PAGO_PENDIENTE[t.metodoPago ?? 'oxxo']
   return PENDIENTE[t.paso]
 }
 
@@ -174,6 +193,11 @@ export const TIPO_EVENTO: Record<string, string> = {
   'pago.referencia_generada': 'Referencia de pago generada',
   'pago.referencia_enviada': 'Referencia enviada por WhatsApp',
   'pago.metodo_cambiado': 'Cambió el método de pago',
+  'pago.iniciado': 'Inició el pago',
+  'pago.datos_transferencia': 'Datos de transferencia generados',
+  'pago.verificacion_solicitada': 'Verificación del banco solicitada',
+  'pago.rechazado': 'Pago rechazado',
+  'pago.aprobado': 'Pago aprobado',
   'canal.mensaje_recibido': 'Mensaje recibido',
   'asesor.clinica_confirmada': 'Clínica confirmada',
   'asesor.reagendado': 'Cita reagendada',
