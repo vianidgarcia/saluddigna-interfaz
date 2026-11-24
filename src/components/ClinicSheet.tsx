@@ -1,14 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type { Clinic } from '../data/clinics'
-import { FiltrosClinica, useBuscadorClinica } from './BuscadorClinica'
+import { FiltrosClinica, MasClinicas, fmtKm, useBuscadorClinica } from './BuscadorClinica'
 import { Icon } from './Icon'
-import { NB, outlineBtn } from './ui'
+import { NB } from './ui'
 
 export function ClinicSheet({ current, onSelect, onClose, titulo = 'Elige tu clínica', sinSeleccion = false }: {
   current: Clinic; onSelect: (c: Clinic) => void; onClose: () => void; titulo?: string; sinSeleccion?: boolean
 }) {
   const b = useBuscadorClinica()
-  const [located, setLocated] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null
@@ -17,7 +16,7 @@ export function ClinicSheet({ current, onSelect, onClose, titulo = 'Elige tu cl�
     window.addEventListener('keydown', k)
     return () => { window.removeEventListener('keydown', k); prev?.focus?.() }
   }, [onClose])
-  const list = b.lista
+  const list = b.resultados
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-end lg:items-stretch">
       <div onClick={onClose} className="absolute inset-0 bg-[#1F2933]/50 [animation:fade_200ms_ease-out]" />
@@ -28,26 +27,26 @@ export function ClinicSheet({ current, onSelect, onClose, titulo = 'Elige tu cl�
         </div>
         <div className="px-4 pt-4 lg:px-6">
           <FiltrosClinica b={b} id="cs" inputRef={ref} />
-          <button onClick={() => { b.limpiar(); b.setEstado('Sinaloa'); b.setCiudad('Culiacán'); setLocated(true) }} className={`${outlineBtn} mt-1 w-full`}><Icon n="target" />Usar mi ubicación</button>
-          {located && <p role="status" className="mt-2 flex items-center gap-2 t-meta font-semibold text-[#006D3D]"><Icon n="check" size={16} />Ubicación de ejemplo: Culiacán, Sinaloa. Clínicas ordenadas por distancia.</p>}
         </div>
         <ul className="mt-4 flex-1 overflow-y-auto px-4 pb-6 lg:px-6">
-          {list.map((c) => {
+          {list.map(({ c, km }) => {
             const sel = !sinSeleccion && c.name === current.name
             return (
               <li key={c.name} className="border-t border-[#D6E4F5]">
                 <button onClick={() => { onSelect(c); onClose() }} aria-pressed={sel} className="-mx-2 flex w-[calc(100%+16px)] min-h-16 items-center justify-between gap-3 rounded-md px-2 py-3 text-left transition-colors hover:bg-[#EBF4FC] active:bg-[#D6E4F5]">
                   <span>
                     <span className="block t-sub font-bold text-[#1F2933]">{c.name}</span>
-                    <span className="block t-meta text-[#5B6B7A]">{c.address} · {c.ciudad}, {c.estado}</span>
-                    <span className="block t-meta text-[#5B6B7A]">{c.km !== undefined && <>{c.km.toFixed(1)}{NB}km · </>}Tel.{NB}{c.phone}</span>
+                    <span className="block t-meta text-[#5B6B7A]">{c.ciudad}, {c.estado}{km !== undefined && <> · {fmtKm(km)}</>}</span>
+                    <span className="block t-meta text-[#43474A]">{c.address}</span>
+                    {c.phone && <span className="block t-meta text-[#5B6B7A]">Tel.{NB}{c.phone}</span>}
                   </span>
                   {sel && <span className="inline-flex items-center gap-1 t-meta font-semibold text-[#006D3D]"><Icon n="check" size={18} />Elegida</span>}
                 </button>
               </li>
             )
           })}
-          {!list.length && <li className="border-t border-[#D6E4F5] py-4 t-body">No encontramos clínicas con esos filtros.</li>}
+          {b.activo && !b.total && <li className="border-t border-[#D6E4F5] py-4 t-body">No encontramos clínicas con esos filtros.</li>}
+          <li><MasClinicas b={b} /></li>
         </ul>
       </div>
     </div>

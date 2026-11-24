@@ -5,7 +5,7 @@ import { SelectorHorario } from '../components/SelectorHorario'
 import { Icon } from '../components/Icon'
 import { CHIPS, STUDIES } from '../data/studies'
 import { findClinic } from '../data/clinics'
-import { FiltrosClinica, useBuscadorClinica } from '../components/BuscadorClinica'
+import { FiltrosClinica, MasClinicas, fmtKm, useBuscadorClinica } from '../components/BuscadorClinica'
 import { NB, WA, container, chip, link, outlineBtn, solidBtn } from '../components/ui'
 import {
   LISTA_PASOS, METODO, PASOS, TOTAL_PASOS, avance, conEvento, fechaLarga, pasoCompleto, yaPaso,
@@ -175,26 +175,28 @@ function PasoClinica({ t }: { t: Tramite }) {
   const b = useBuscadorClinica()
   const elegida = findClinic(t.clinica)
   // la clínica ya elegida se mantiene visible aunque los filtros no la incluyan
-  const lista = elegida && !b.lista.some((c) => c.name === elegida.name) ? [elegida, ...b.lista] : b.lista
+  const filas = elegida && !b.resultados.some((r) => r.c.name === elegida.name) ? [{ c: elegida, km: undefined }, ...b.resultados] : b.resultados
   return (
     <>
       <FiltrosClinica b={b} id="pc" />
       <fieldset className="mt-6">
         <legend className="text-base font-semibold text-[#1F2933]">Elige una clínica</legend>
         <div className="mt-2 flex flex-col gap-2">
-          {lista.map((c, i) => (
+          {filas.map(({ c, km }, i) => (
             <label key={c.name} className={`${optionRow} border-[#D6E4F5] hover:border-[#0074D9]`}>
               <input type="radio" name="clinica" className={radio} checked={t.clinica === c.name}
                 onChange={() => update((x) => ({ ...x, clinica: c.name, clinicaPendiente: false }))} />
               <span className="min-w-0">
                 <span className="block text-base font-semibold text-[#1F2933]">{c.name}</span>
-                {i === 0 && c.km !== undefined && !b.q && <span className="block t-meta font-semibold text-[#005BB0]">Más cercana</span>}
-                <span className="block t-meta text-[#5B6B7A]">{c.address} · {c.ciudad}, {c.estado}</span>
-                <span className="block t-meta text-[#5B6B7A]">{c.km !== undefined && <>{c.km.toFixed(1)}{NB}km (distancia de ejemplo) · </>}Tel.{NB}{c.phone}</span>
+                {i === 0 && km !== undefined && <span className="block t-meta font-semibold text-[#005BB0]">Más cercana</span>}
+                <span className="block t-meta text-[#5B6B7A]">{c.ciudad}, {c.estado}{km !== undefined && <> · {fmtKm(km)}</>}</span>
+                <span className="block t-meta text-[#43474A]">{c.address}</span>
+                {(c.phone || c.horario) && <span className="block t-meta text-[#5B6B7A]">{c.phone && <>Tel.{NB}{c.phone}</>}{c.phone && c.horario && ' · '}{c.horario}</span>}
               </span>
             </label>
           ))}
-          {!b.lista.length && <p className="rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]">No encontramos clínicas con esos filtros. Prueba con otra ciudad o toca “Limpiar filtros”.</p>}
+          {b.activo && !b.total && <p className="rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]">No encontramos clínicas con esos filtros. Prueba con otra ciudad o toca “Limpiar filtros”.</p>}
+          <MasClinicas b={b} />
           <label className={`${optionRow} border-dashed border-[#D6E4F5] hover:border-[#0074D9]`}>
             <input type="radio" name="clinica" className={radio} checked={t.clinicaPendiente}
               onChange={() => update((x) => ({ ...x, clinica: null, clinicaPendiente: true }))} />
