@@ -25,6 +25,14 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - `src/state/sesion.ts`: roles y credenciales de demostración (`sd_sesion` en localStorage + copia por pestaña en
   sessionStorage, para tener Paciente y Asesor abiertos a la vez).
 
+## PWA
+- `public/manifest.webmanifest` (íconos en `public/icons/`, atajos `?accion=agendar|tramites`) y `public/sw.js`.
+- El service worker solo se registra en la versión compilada (`import.meta.env.PROD`), nunca en `npm run dev`.
+  Precarga index.html y los archivos de `/assets/` que enlaza; navegación con red primero y respaldo en caché.
+  Al cambiar `sw.js`, sube `VERSION` para que los clientes descarten la caché anterior.
+- Probar: `npm run preview:pwa` (compila y sirve en la red local). Instalar requiere localhost o HTTPS.
+- `components/Pwa.tsx`: aviso de conexión (en el flujo, no fijo) y botón "Instalar app" (solo si el navegador lo ofrece).
+
 ## Sistema visual (no cambiar sin pedirlo)
 - Colores: azul acción #0074D9 (hover #005BB0), azul marino #004480 (tarjeta de continuidad),
   fondo de banda #ECF3F9, superficie resaltada #EBF4FC, bordes #D6E4F5,

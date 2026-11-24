@@ -70,7 +70,8 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
 
   // si el día enfocable no está en el mes visible, usa el primero habilitado
   const enMes = (iso: string) => { const d = parse(iso); return d.getFullYear() === mes.y && d.getMonth() === mes.m }
-  const tabDia = enMes(foco) ? foco : (semanas.flat().find((d) => d && habilitado(d)) ?? semanas.flat().find(Boolean)!)
+  // nunca un día deshabilitado (p. ej. hoy después del último horario): no podría recibir el foco
+  const tabDia = enMes(foco) && habilitado(foco) ? foco : (semanas.flat().find((d) => d && habilitado(d)) ?? semanas.flat().find(Boolean)!)
 
   useEffect(() => {
     if (!moverFoco.current) return
@@ -84,7 +85,9 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
     const paso = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key]
     if (!paso) return
     e.preventDefault()
-    const destino = sumarDias(iso, paso)
+    // salta días sin lugar en la misma dirección; se detiene en los límites (hoy y el máximo)
+    let destino = sumarDias(iso, paso)
+    while (destino >= hoy && destino <= max && !habilitado(destino)) destino = sumarDias(destino, paso)
     if (destino < hoy || destino > max) return
     const d = parse(destino)
     setMes({ y: d.getFullYear(), m: d.getMonth() })

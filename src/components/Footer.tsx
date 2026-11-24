@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../context'
 import { Icon } from './Icon'
+import { BotonInstalar } from './Pwa'
 import { container } from './ui'
 
 export const FOOT: Record<string, string[]> = {
@@ -28,6 +29,7 @@ export function Footer() {
           <div className="flex flex-wrap gap-x-6">
             <button onClick={() => toast()} className="inline-flex min-h-12 items-center rounded-md text-[#5B6B7A] hover:text-[#005BB0] hover:underline">Aviso de privacidad</button>
             <button onClick={() => toast()} className="inline-flex min-h-12 items-center rounded-md text-[#5B6B7A] hover:text-[#005BB0] hover:underline">Términos y condiciones</button>
+            <BotonInstalar />
           </div>
           <p className="text-[#5B6B7A]">© Salud Digna</p>
         </div>

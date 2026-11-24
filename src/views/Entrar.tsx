@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Logo } from '../components/Header'
 import { Icon } from '../components/Icon'
+import { AvisoConexion } from '../components/Pwa'
 import { container, link, outlineBtn, solidBtn } from '../components/ui'
 import { CREDENCIALES, ROL, entrar, type Rol, type Sesion } from '../state/sesion'
 
@@ -35,6 +36,7 @@ export function Entrar({ onEntrar, onVolver, rolInicial = 'paciente', motivo }: 
           <button onClick={onVolver} className="inline-flex min-h-12 items-center rounded-md" aria-label="Salud Digna, volver a la página principal"><Logo /></button>
         </div>
       </header>
+      <AvisoConexion />
       <main id="contenido" className={`${container} flex-1 py-6 lg:py-12`}>
         <button onClick={onVolver} className={link}><Icon n="left" />Volver a la página principal</button>
         {motivo && <p role="status" className="mt-2 flex items-center gap-2 t-body font-semibold text-[#1F2933]"><Icon n="user" className="text-[#005BB0]" />{motivo}</p>}

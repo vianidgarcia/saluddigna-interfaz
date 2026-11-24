@@ -14,6 +14,7 @@ import { Agendar } from './views/Agendar'
 import { Entrar } from './views/Entrar'
 import { Asesor } from './views/Asesor'
 import { StaffHeader } from './components/StaffHeader'
+import { AvisoConexion, BotonInstalar } from './components/Pwa'
 import { loadSesion, saveSesion, type Rol, type Sesion } from './state/sesion'
 import { PASOS, STORAGE_KEY, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
 
@@ -154,6 +155,18 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
+  // accesos directos de la app instalada (manifest → shortcuts): ?accion=agendar | tramites
+  const accionInicial = useRef(true)
+  useEffect(() => {
+    if (!accionInicial.current) return
+    accionInicial.current = false
+    const accion = new URLSearchParams(window.location.search).get('accion')
+    if (!accion) return
+    window.history.replaceState(null, '', window.location.pathname)
+    if (accion === 'agendar') startAgendar()
+    else if (accion === 'tramites') go('tramites')
+  })
+
   const ctx: AppCtx = { go, toast, openClinics: () => setSheet(true), scrollToId, tramite, update, startAgendar, continuar, simularWhatsApp, reiniciarDemo, sesion, salir, abrirEntrar }
   const toastEl = (
     <div role="status" aria-live="polite" className="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 lg:bottom-8">
@@ -172,8 +185,9 @@ export default function App() {
         <div className="flex min-h-screen flex-col bg-white">
           <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:font-semibold focus:text-[#005BB0] focus:shadow-lg">Saltar al contenido</a>
           <StaffHeader />
+          <AvisoConexion />
           <main id="contenido" tabIndex={-1} className="flex-1 focus:outline-none"><Asesor /></main>
-          <footer className="border-t border-[#D6E4F5] py-4"><p className="mx-auto w-full max-w-[1200px] px-4 t-meta text-[#5B6B7A] lg:px-8">Prototipo · todos los datos son de demostración.</p></footer>
+          <footer className="border-t border-[#D6E4F5] py-2"><div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-x-6 px-4 t-meta text-[#5B6B7A] lg:px-8"><p className="py-3">Prototipo · todos los datos son de demostración.</p><BotonInstalar /></div></footer>
           {toastEl}
         </div>
       </Ctx.Provider>
@@ -186,6 +200,7 @@ export default function App() {
       <div className="flex min-h-screen flex-col pb-16 lg:pb-0">
         <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:font-semibold focus:text-[#005BB0] focus:shadow-lg">Saltar al contenido</a>
         <Header clinic={clinic} onChange={() => setSheet(true)} onHome={() => go('home')} />
+        <AvisoConexion />
         {cookies && <Cookies onDone={cerrarCookies} />}
         <main id="contenido" tabIndex={-1} className="flex-1 focus:outline-none">
           {activeView === 'home' && <Home clinic={clinic} />}
