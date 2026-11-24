@@ -34,7 +34,8 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - `components/Pwa.tsx`: aviso de conexión (en el flujo, no fijo) y botón "Instalar app" (solo si el navegador lo ofrece).
 
 ## Sistema visual (no cambiar sin pedirlo)
-- Colores: azul acción #0074D9 (hover #005BB0), azul marino #004480 (tarjeta de continuidad),
+- Colores: azul acción #0074D9 (hover #005BB0), azul marino #004480 (reservado; la tarjeta de continuidad ahora es
+  blanca con borde #D6E4F5 y texto oscuro, como el buscador),
   fondo de banda #ECF3F9, superficie resaltada #EBF4FC, bordes #D6E4F5,
   texto títulos #1F2933, cuerpo #43474A, secundario #5B6B7A.
   Ámbar #F2A00D SOLO para viñetas/estado pendiente (insignia: fondo #FDF1DB, texto #7A4E00).

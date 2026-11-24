@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { useApp } from '../context'
 import { TOTAL_PASOS, avance, CANAL, ICONO_CANAL, TICK_MS, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
 import { Icon } from './Icon'
-import { WA } from './ui'
+import { WA, link, solidBtn } from './ui'
 
-const card = 'on-dark flex flex-col rounded-2xl bg-[#004480] p-6 text-white lg:h-full lg:p-10'
-const whiteBtn = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-6 text-base font-semibold text-[#005BB0] transition-colors hover:bg-[#EBF4FC] active:bg-[#D6E4F5]'
-const darkLink = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-md px-1 text-base font-semibold text-white underline underline-offset-4 hover:bg-white/10 active:bg-white/20'
+// tarjeta clara (antes azul marino): mismo peso visual que el buscador de al lado, texto oscuro más fácil de leer
+const card = 'flex flex-col rounded-2xl border border-[#D6E4F5] bg-white p-6 text-[#43474A] lg:h-full lg:p-10'
+const primario = solidBtn
+const enlace = `${link} justify-center underline`
 
 export function ContinueCard() {
   const { tramite: t, continuar, startAgendar, sesion, abrirEntrar } = useApp()
@@ -19,11 +20,11 @@ export function ContinueCard() {
   if (!sesion) {
     return (
       <section aria-labelledby="continua" className={card}>
-        <h2 id="continua" className="font-head t-card text-white">Una sola conversación, en todos tus canales</h2>
-        <p className="mt-3 t-body text-white">Inicia sesión para agendar tus estudios y retomar tus trámites donde te quedaste: en la web, por WhatsApp o con nuestro Call Center.</p>
+        <h2 id="continua" className="font-head t-card text-[#1F2933]">Una sola conversación, en todos tus canales</h2>
+        <p className="mt-3 t-body">Inicia sesión para agendar tus estudios y retomar tus trámites donde te quedaste: en la web, por WhatsApp o con nuestro Call Center.</p>
         <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6 lg:mt-auto lg:pt-8">
-          <button onClick={() => abrirEntrar('paciente')} className={whiteBtn}><Icon n="user" />Iniciar sesión</button>
-          <a href={WA} target="_blank" rel="noopener" className={darkLink}><Icon n="chat" />Escríbenos por WhatsApp</a>
+          <button onClick={() => abrirEntrar('paciente')} className={primario}><Icon n="user" />Iniciar sesión</button>
+          <a href={WA} target="_blank" rel="noopener" className={enlace}><Icon n="chat" />Escríbenos por WhatsApp</a>
         </div>
       </section>
     )
@@ -32,11 +33,11 @@ export function ContinueCard() {
   if (!t) {
     return (
       <section aria-labelledby="continua" className={card}>
-        <h2 id="continua" className="font-head t-card text-white">Agenda tu próximo estudio</h2>
-        <p className="mt-3 t-body text-white">Aún no tienes trámites en curso. Agenda en 4 pasos; si te interrumpes, aquí retomas donde te quedaste, desde la web o por WhatsApp.</p>
+        <h2 id="continua" className="font-head t-card text-[#1F2933]">Agenda tu próximo estudio</h2>
+        <p className="mt-3 t-body">Aún no tienes trámites en curso. Agenda en 4 pasos; si te interrumpes, aquí retomas donde te quedaste, desde la web o por WhatsApp.</p>
         <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6 lg:mt-auto lg:pt-8">
-          <button onClick={() => startAgendar()} className={whiteBtn}><Icon n="calendar" />Agendar cita</button>
-          <a href={WA} target="_blank" rel="noopener" className={darkLink}><Icon n="chat" />Agendar por WhatsApp</a>
+          <button onClick={() => startAgendar()} className={primario}><Icon n="calendar" />Agendar cita</button>
+          <a href={WA} target="_blank" rel="noopener" className={enlace}><Icon n="chat" />Agendar por WhatsApp</a>
         </div>
       </section>
     )
@@ -47,31 +48,31 @@ export function ContinueCard() {
   const waText = encodeURIComponent(`Hola, quiero continuar mi trámite ${t.id}`)
   return (
     <section aria-labelledby="continua" className={card}>
-      <h2 id="continua" className="t-sub font-semibold text-white">{confirmada ? 'Tu próxima cita' : 'Continúa donde te quedaste'}</h2>
+      <h2 id="continua" className="t-sub font-semibold text-[#5B6B7A]">{confirmada ? 'Tu próxima cita' : 'Continúa donde te quedaste'}</h2>
       <div className="mt-6">
-        <h3 className="font-head t-card text-white">{t.estudio?.nombre ?? 'Cita por agendar'}</h3>
-        <p className="mt-1 t-body text-white">
-          {clinicaTexto(t)} · <strong className="font-bold">{confirmada && <Icon n="check" size={18} className="mr-1 inline -translate-y-px" />}{estadoTexto(t)}</strong>
+        <h3 className="font-head t-card text-[#1F2933]">{t.estudio?.nombre ?? 'Cita por agendar'}</h3>
+        <p className="mt-1 t-body">
+          {clinicaTexto(t)} · <strong className={`font-bold ${confirmada ? 'text-[#006D3D]' : 'text-[#1F2933]'}`}>{confirmada && <Icon n="check" size={18} className="mr-1 inline -translate-y-px" />}{estadoTexto(t)}</strong>
         </p>
-        {confirmada && t.fecha && <p className="mt-1 t-body text-white first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}</p>}
+        {confirmada && t.fecha && <p className="mt-1 t-body first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}</p>}
       </div>
       {!confirmada && (
         <div className="mt-8">
-          <p className="t-sub">Paso {paso} de {TOTAL_PASOS}</p>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-white/25">
-            <div className="h-full rounded-full bg-white transition-[width]" style={{ width: `${avance(paso)}%` }} />
+          <p className="t-sub font-semibold text-[#1F2933]">Paso {paso} de {TOTAL_PASOS}</p>
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-[#EBF4FC]">
+            <div className="h-full rounded-full bg-[#005BB0] transition-[width]" style={{ width: `${avance(paso)}%` }} />
           </div>
         </div>
       )}
-      <ul className="mt-6 flex flex-col gap-2 border-t border-white/25 pt-6 t-meta text-white">
-        <li className="flex items-center gap-2"><Icon n={ICONO_CANAL[t.canalInicio]} size={20} />Iniciado en {CANAL[t.canalInicio]}</li>
-        <li className="flex items-center gap-2" aria-live="polite"><Icon n={ICONO_CANAL[t.ultimoCanal]} size={20} />Último movimiento por {CANAL[t.ultimoCanal]}, {hace(t.ultimaActualizacion, now)}</li>
+      <ul className="mt-6 flex flex-col gap-2 border-t border-[#D6E4F5] pt-6 t-meta text-[#43474A]">
+        <li className="flex items-center gap-2"><Icon n={ICONO_CANAL[t.canalInicio]} size={20} className="text-[#0074D9]" />Iniciado en {CANAL[t.canalInicio]}</li>
+        <li className="flex items-center gap-2" aria-live="polite"><Icon n={ICONO_CANAL[t.ultimoCanal]} size={20} className="text-[#0074D9]" />Último movimiento por {CANAL[t.ultimoCanal]}, {hace(t.ultimaActualizacion, now)}</li>
       </ul>
       <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
-        <button onClick={continuar} className={whiteBtn}>
+        <button onClick={continuar} className={primario}>
           {confirmada ? 'Ver mi cita' : 'Continuar trámite'}<Icon n="arrow" />
         </button>
-        <a href={`${WA}?text=${waText}`} target="_blank" rel="noopener" className={darkLink}>
+        <a href={`${WA}?text=${waText}`} target="_blank" rel="noopener" className={enlace}>
           <Icon n="chat" />Seguir por WhatsApp
         </a>
       </div>
