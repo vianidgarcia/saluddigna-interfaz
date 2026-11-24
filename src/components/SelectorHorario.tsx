@@ -110,23 +110,21 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
           <tr>{SEMANA.map(([c, l], i) => <th key={i} scope="col" abbr={l} className="pb-1 t-meta font-semibold text-[#5B6B7A]"><span aria-hidden="true">{c}</span><span className="sr-only">{l}</span></th>)}</tr>
         </thead>
         <tbody>
-          {semanas.map((s, i) => (
+          {/* solo se dibujan los días disponibles; las semanas sin ninguno se omiten */}
+          {semanas.filter((s) => s.some((iso) => iso && habilitado(iso))).map((s, i) => (
             <tr key={i}>
               {s.map((iso, j) => {
-                if (!iso) return <td key={j} />
-                const ok = habilitado(iso)
+                if (!iso || !habilitado(iso)) return <td key={j} />
                 const sel = iso === fecha
                 const esHoy = iso === hoy
-                const motivo = iso < hoy ? ', ya pasó' : iso > max ? ', fuera de rango' : !ok ? ', sin lugar' : ''
                 return (
                   <td key={j} className="p-0">
-                    <button data-dia={iso} tabIndex={iso === tabDia ? 0 : -1} disabled={!ok} aria-pressed={sel}
-                      aria-label={`${fechaLarga(iso)}${esHoy ? ', hoy' : ''}${motivo}`}
+                    <button data-dia={iso} tabIndex={iso === tabDia ? 0 : -1} aria-pressed={sel}
+                      aria-label={`${fechaLarga(iso)}${esHoy ? ', hoy' : ''}`}
                       onClick={() => { setFoco(iso); onFecha(iso) }} onKeyDown={(e) => onKey(e, iso)}
                       className={`flex h-12 w-full flex-col items-center justify-center rounded-lg text-base transition-colors ${
                         sel ? 'bg-[#005BB0] font-semibold text-white'
-                          : ok ? `border ${esHoy ? 'border-[#005BB0]' : 'border-[#D6E4F5]'} bg-white text-[#1F2933] hover:border-[#0074D9] hover:bg-[#EBF4FC]`
-                            : 'cursor-not-allowed text-[#5B6B7A] line-through decoration-[#5B6B7A]/60'}`}>
+                          : `border ${esHoy ? 'border-[#005BB0]' : 'border-[#D6E4F5]'} bg-white text-[#1F2933] hover:border-[#0074D9] hover:bg-[#EBF4FC]`}`}>
                       <span>{parse(iso).getDate()}</span>
                       {esHoy && <span className={`text-[11px] leading-none ${sel ? 'text-white' : 'text-[#005BB0]'}`} aria-hidden="true">Hoy</span>}
                     </button>
@@ -137,7 +135,10 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
           ))}
         </tbody>
       </table>
-      <p className="mt-1 t-meta text-[#5B6B7A]">Puedes agendar desde hoy y hasta {DIAS_MAXIMOS} días después. Usa las flechas del teclado para moverte entre días.</p>
+      {!semanas.some((s) => s.some((iso) => iso && habilitado(iso))) && (
+        <p className="rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]">No hay días disponibles en {titulo}. Prueba con otro mes.</p>
+      )}
+      <p className="mt-1 t-meta text-[#5B6B7A]">Solo se muestran los días con horarios disponibles, desde hoy y hasta {DIAS_MAXIMOS} días después. Usa las flechas del teclado para moverte entre días.</p>
     </div>
   )
 }
@@ -150,7 +151,8 @@ function SelectorHora({ id, fecha, hora, onHora }: { id: string; fecha: string; 
   // la hora guardada ya no sirve (pasó o se ocupó): se limpia
   useEffect(() => { if (hora && !inicial) onHora(null) }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const horas = Array.from(new Set(HORAS.map((h) => h.slice(0, 2))))
+  // solo horas con al menos un horario libre, y solo minutos libres
+  const horas = Array.from(new Set(HORAS.map((h) => h.slice(0, 2)))).filter((h) => HORAS.some((x) => x.startsWith(h + ':') && disponible(fecha, x)))
   const minutosDe = (h: string) => HORAS.filter((x) => x.startsWith(h + ':')).map((x) => x.slice(3))
   const libres = (h: string) => minutosDe(h).filter((m) => disponible(fecha, `${h}:${m}`))
   const siguiente = HORAS.find((h) => disponible(fecha, h)) ?? null
@@ -179,10 +181,7 @@ function SelectorHora({ id, fecha, hora, onHora }: { id: string; fecha: string; 
           <div className="relative mt-2">
             <select id={`${id}-hh`} value={hh} onChange={(e) => elegirHora(e.target.value)} className={select}>
               <option value="" disabled>Elige</option>
-              {horas.map((h) => {
-                const n = libres(h).length
-                return <option key={h} value={h} disabled={!n}>{h} h{n ? '' : ' · sin lugar'}</option>
-              })}
+              {horas.map((h) => <option key={h} value={h}>{h} h</option>)}
             </select>
             <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-[#5B6B7A]" />
           </div>
@@ -192,10 +191,7 @@ function SelectorHora({ id, fecha, hora, onHora }: { id: string; fecha: string; 
           <div className="relative mt-2">
             <select id={`${id}-mm`} value={mm} onChange={(e) => elegirMin(e.target.value)} disabled={!hh} className={`${select} disabled:cursor-not-allowed disabled:bg-[#ECF3F9] disabled:text-[#5B6B7A]`}>
               <option value="" disabled>{hh ? 'Elige' : 'Primero la hora'}</option>
-              {hh && minutosDe(hh).map((m) => {
-                const ok = disponible(fecha, `${hh}:${m}`)
-                return <option key={m} value={m} disabled={!ok}>:{m}{ok ? '' : yaPaso(fecha, `${hh}:${m}`) ? ' · ya pasó' : ' · ocupado'}</option>
-              })}
+              {hh && libres(hh).map((m) => <option key={m} value={m}>:{m}</option>)}
             </select>
             <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-[#5B6B7A]" />
           </div>

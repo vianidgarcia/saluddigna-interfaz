@@ -53,7 +53,7 @@ function ClinicRow({ clinic }: { clinic: Clinic }) {
       <div className="flex flex-col gap-2 border-t border-[#D6E4F5] pt-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
         <p className="flex items-start gap-3 t-body text-[#43474A]">
           <Icon n="pin" className="mt-0.5 text-[#0074D9]" />
-          <span>Tu clínica más cercana: <strong className="font-bold text-[#1F2933]">{clinic.name}</strong> · {clinic.km.toFixed(1)}{NB}km</span>
+          <span>Tu clínica más cercana: <strong className="font-bold text-[#1F2933]">{clinic.name}</strong> {clinic.km !== undefined && <> · {clinic.km.toFixed(1)}{NB}km</>}</span>
         </p>
         <div className="flex flex-wrap gap-x-6">
           <a href={tel(clinic.phone)} className={link}><Icon n="phone" />Llamar{NB}{clinic.phone.replace(/ /g, NB)}</a>

@@ -17,7 +17,11 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - Agendado en 4 pasos (`TOTAL_PASOS`): Estudio, Clínica, Fecha y hora, Pago. El paciente se identifica por su cuenta
   del portal; por ahora NO se usa el número de teléfono como identificador.
 - Fecha y hora: `SelectorHorario` (calendario + hora/minutos). Nunca permite fechas u horas pasadas (`yaPaso`).
-- `src/components/`: piezas de interfaz (Header, StaffHeader, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, SelectorHorario, Icon, ui).
+  Solo muestra días y horas disponibles (los ocupados o pasados no se dibujan).
+- Clínicas: `data/clinics.ts` (cada una con estado y ciudad) + `components/BuscadorClinica` (estado, ciudad y
+  sucursal). Lo usan el paso 2 del agendado y `ClinicSheet`. Pendiente: cargar el directorio completo de
+  salud-digna.org/ubica-tu-clinica (por ahora solo Culiacán, Sinaloa); no inventar clínicas.
+- `src/components/`: piezas de interfaz (Header, StaffHeader, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, BuscadorClinica, SelectorHorario, Pwa, Icon, ui).
 - `src/views/`: Entrar, Home, Agendar, Pay, Tramites, Resultados, Asesor (también la usa Administrador).
 - `src/data/`: clinics, studies, packages.
 - `src/state/tramite.ts`: tipo `Tramite`, persistencia en localStorage (`sd_tramite_activo`) y línea de tiempo de eventos.
