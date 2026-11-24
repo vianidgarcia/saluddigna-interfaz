@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useApp } from '../context'
 import { Back } from '../components/Back'
 import { SelectorHorario } from '../components/SelectorHorario'
+import { BotonComprobante } from '../components/BotonComprobante'
 import { Icon } from '../components/Icon'
 import { CHIPS, STUDIES } from '../data/studies'
 import { findClinic } from '../data/clinics'
@@ -328,8 +329,9 @@ function Confirmada({ t }: { t: Tramite }) {
             <div><dt className="t-meta text-secundario">Folio</dt><dd className="t-body font-semibold text-titulo">{t.id} <span className="t-meta font-normal text-secundario">(folio de ejemplo)</span></dd></div>
           </dl>
         </section>
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
           <button onClick={() => go('tramites')} className={solidBtn}>Ver mis trámites</button>
+          <BotonComprobante t={t} />
           <a href={`${WA}?text=${encodeURIComponent(`Hola, quiero ver mi cita ${t.id}`)}`} target="_blank" rel="noopener" className={`${link} justify-center`}><Icon n="chat" />Abrir en WhatsApp</a>
         </div>
       </div>

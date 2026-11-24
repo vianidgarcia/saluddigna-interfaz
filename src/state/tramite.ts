@@ -202,6 +202,7 @@ export const TIPO_EVENTO: Record<string, string> = {
   'asesor.clinica_confirmada': 'Clínica confirmada',
   'asesor.reagendado': 'Cita reagendada',
   'cita.confirmada': 'Cita confirmada',
+  'cita.comprobante_descargado': 'Comprobante descargado',
   'nota.interna': 'Nota interna',
 }
 
