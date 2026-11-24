@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useApp } from '../context'
 import { Icon } from '../components/Icon'
 import { ClinicSheet } from '../components/ClinicSheet'
+import { BotonComprobante } from '../components/BotonComprobante'
 import { SelectorHorario } from '../components/SelectorHorario'
 import { container, link, outlineBtn, solidBtn } from '../components/ui'
 import { CLINICA_INICIAL, findClinic } from '../data/clinics'
@@ -170,7 +171,10 @@ function Ficha({ t }: { t: Tramite }) {
           <p className="mt-1 t-meta text-secundario">Cada acción actualiza el mismo trámite y queda en la línea de tiempo como Call Center.</p>
           <p role="status" className="mt-3 min-h-0 t-body font-semibold text-titulo empty:hidden">{aviso && <span className="inline-flex items-center gap-2 rounded-lg bg-resaltado px-3 py-2"><Icon n="check" size={18} className="text-enlace" />{aviso}</span>}</p>
           {confirmada ? (
-            <p className="mt-4 flex items-center gap-2 t-body font-semibold text-verde"><Icon n="check" />El trámite está cerrado como confirmado. El paciente ya lo ve en su portal.</p>
+            <>
+              <p className="mt-4 flex items-center gap-2 t-body font-semibold text-verde"><Icon n="check" />El trámite está cerrado como confirmado. El paciente ya lo ve en su portal.</p>
+              <BotonComprobante t={t} canal="call_center" className="mt-3" />
+            </>
           ) : (
             <>
               <div className="mt-4 flex flex-wrap gap-3">

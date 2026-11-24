@@ -43,6 +43,10 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
   4111…1111 y 5555…4444 aprobadas, 4000…3220 pide código 123456, 4000…0002 rechazada, 4000…9995 sin fondos.
   Nunca se guarda el número completo ni el CVV (solo marca y últimos 4); los campos tienen autocomplete="off".
   Los eventos del pago usan el canal `pasarela`. Pendiente por definir: liga de pago enviada por el asesor.
+- Comprobante en PDF: `state/comprobante.ts` (jsPDF, cargado solo al pulsar el botón; no pesa en el inicio) y
+  `components/BotonComprobante` ("Descargar comprobante (PDF)"), solo con la cita confirmada: en la confirmación,
+  en Mis trámites y en la ficha del asesor. Incluye folio, nombre, estudio, clínica, fecha y hora, pago (solo marca y
+  últimos 4) y contacto; dice que es un documento de demostración. La descarga se registra en la línea de tiempo.
 
 ## PWA
 - `public/manifest.webmanifest` (íconos en `public/icons/`, atajos `?accion=agendar|tramites`) y `public/sw.js`.

@@ -1,6 +1,7 @@
 import { useApp } from '../context'
 import { Back } from '../components/Back'
 import { Icon } from '../components/Icon'
+import { BotonComprobante } from '../components/BotonComprobante'
 import { container, outlineBtn, solidBtn } from '../components/ui'
 import { TOTAL_PASOS, CANAL, ICONO_CANAL, esNotaInterna, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
 
@@ -37,7 +38,7 @@ export function Tramites() {
             <p className="mt-2 t-meta text-secundario">Folio {t.id} (de ejemplo) · Iniciado en {CANAL[t.canalInicio]} · Último movimiento por {CANAL[t.ultimoCanal]}, {hace(t.ultimaActualizacion)}</p>
           </div>
           {confirmada
-            ? <button onClick={() => startAgendar()} className={`${outlineBtn} shrink-0`}><Icon n="calendar" />Agendar otra cita</button>
+            ? <div className="flex shrink-0 flex-col gap-3"><BotonComprobante t={t} /><button onClick={() => startAgendar()} className={outlineBtn}><Icon n="calendar" />Agendar otra cita</button></div>
             : <button onClick={continuar} className={`${solidBtn} shrink-0`}>Continuar trámite<Icon n="arrow" /></button>}
         </div>
       </section>
