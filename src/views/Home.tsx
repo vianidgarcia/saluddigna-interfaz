@@ -16,12 +16,12 @@ const QUICK = [
 ]
 
 function Hero() {
-  const { go, toast, startAgendar } = useApp()
+  const { go, toast, startAgendar, sesion } = useApp()
   const quickAct = (t: string) => (t === 'Agendar cita' ? startAgendar() : t === 'Mis resultados' ? go('resultados') : toast())
   return (
     <div className="bg-[#ECF3F9] pb-10 pt-8 lg:pb-16 lg:pt-12">
       <div className={container}>
-        <h1 className="t-greeting font-head text-[#1F2933]">Hola, Ana</h1>
+        <h1 className="t-greeting font-head text-[#1F2933]">{sesion ? `Hola, ${sesion.nombre}` : 'Agenda tus estudios en Salud Digna'}</h1>
         <div className="mt-6 grid gap-6 lg:grid-cols-12 lg:items-stretch lg:gap-8">
           <div className="lg:col-span-7"><ContinueCard /></div>
           <div className="lg:col-span-5"><Search /></div>

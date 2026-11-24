@@ -1,14 +1,16 @@
 import { useRef, useState } from 'react'
 import { Logo } from '../components/Header'
 import { Icon } from '../components/Icon'
-import { container, outlineBtn, solidBtn } from '../components/ui'
+import { container, link, outlineBtn, solidBtn } from '../components/ui'
 import { CREDENCIALES, ROL, entrar, type Rol, type Sesion } from '../state/sesion'
 
 const ICONO_ROL: Record<Rol, string> = { paciente: 'user', asesor: 'headset', admin: 'shield' }
 const fieldInput = 'h-12 w-full rounded-lg border border-[#D6E4F5] bg-white px-4 text-base text-[#1F2933] transition-colors hover:border-[#0074D9] aria-[invalid=true]:border-2 aria-[invalid=true]:border-[#B3261E]'
 
-export function Entrar({ onEntrar }: { onEntrar: (s: Sesion) => void }) {
-  const [rol, setRol] = useState<Rol>('paciente')
+export function Entrar({ onEntrar, onVolver, rolInicial = 'paciente', motivo }: {
+  onEntrar: (s: Sesion) => void; onVolver: () => void; rolInicial?: Rol; motivo?: string
+}) {
+  const [rol, setRol] = useState<Rol>(rolInicial)
   const [correo, setCorreo] = useState('')
   const [clave, setClave] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -29,10 +31,14 @@ export function Entrar({ onEntrar }: { onEntrar: (s: Sesion) => void }) {
   return (
     <div className="flex min-h-screen flex-col bg-[#ECF3F9]">
       <header className="border-b border-[#D6E4F5] bg-white">
-        <div className={`${container} flex min-h-[72px] items-center`}><Logo /></div>
+        <div className={`${container} flex min-h-[72px] items-center`}>
+          <button onClick={onVolver} className="inline-flex min-h-12 items-center rounded-md" aria-label="Salud Digna, volver a la página principal"><Logo /></button>
+        </div>
       </header>
-      <main id="contenido" className={`${container} flex-1 py-8 lg:py-16`}>
-        <div className="grid gap-8 lg:grid-cols-12 lg:gap-8">
+      <main id="contenido" className={`${container} flex-1 py-6 lg:py-12`}>
+        <button onClick={onVolver} className={link}><Icon n="left" />Volver a la página principal</button>
+        {motivo && <p role="status" className="mt-2 flex items-center gap-2 t-body font-semibold text-[#1F2933]"><Icon n="user" className="text-[#005BB0]" />{motivo}</p>}
+        <div className="mt-4 grid gap-8 lg:grid-cols-12 lg:gap-8">
           <section aria-labelledby="entrar-t" className="rounded-2xl bg-white p-6 lg:col-span-7 lg:p-10">
             <h1 id="entrar-t" className="t-greeting font-head text-[#1F2933]">Entrar</h1>
             <p className="mt-2 t-body">Cada rol ve su propia vista: el paciente, su portal; asesor y administrador, la atención al paciente.</p>

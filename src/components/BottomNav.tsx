@@ -2,12 +2,12 @@ import { useApp, type View } from '../context'
 import { Icon } from './Icon'
 
 export function BottomNav({ view }: { view: View }) {
-  const { go, toast } = useApp()
+  const { go, toast, sesion, abrirEntrar } = useApp()
   const items: [string, string, () => void, boolean][] = [
     ['home', 'Inicio', () => go('home'), view === 'home'],
     ['tramite', 'Mis trámites', () => go('tramites'), view === 'tramites'],
     ['file', 'Resultados', () => go('resultados'), view === 'resultados'],
-    ['user', 'Perfil', () => toast(), false],
+    sesion ? ['user', 'Perfil', () => toast(), false] : ['user', 'Entrar', () => abrirEntrar('paciente'), false],
   ]
   return (
     <nav aria-label="Navegación inferior" className="fixed inset-x-0 bottom-0 z-30 border-t border-[#D6E4F5] bg-white lg:hidden">

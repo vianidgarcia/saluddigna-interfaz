@@ -7,7 +7,7 @@ import { container, link, outlineBtn, solidBtn } from '../components/ui'
 import { CLINICS, findClinic } from '../data/clinics'
 import {
   CANAL, ICONO_CANAL, METODO, PASOS, TIPO_EVENTO, TICK_MS, avance, conEvento, conNota, esNotaInterna,
-  fechaLarga, hace, horaEvento, ultimos4, type Tramite,
+  fechaLarga, hace, horaEvento, TOTAL_PASOS, yaPaso, type Tramite,
 } from '../state/tramite'
 
 const fieldInput = 'w-full rounded-lg border border-[#D6E4F5] bg-white px-4 text-base text-[#1F2933] transition-colors hover:border-[#0074D9]'
@@ -16,9 +16,7 @@ const sinAcentos = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 function coincide(t: Tramite, q: string): boolean {
   const texto = sinAcentos(q.trim())
   if (!texto) return false
-  const digitos = q.replace(/\D/g, '')
-  if (digitos.length >= 3 && t.paciente.whatsapp?.includes(digitos)) return true
-  return sinAcentos(t.paciente.nombre).includes(texto)
+  return sinAcentos(t.paciente.nombre).includes(texto) || t.paciente.cuenta.toLowerCase().includes(texto)
 }
 
 const Pendiente = ({ children }: { children: ReactNode }) => (
@@ -43,26 +41,26 @@ export function Asesor() {
       <p className="mt-2 max-w-3xl t-body">Busca al paciente y retoma su trámite con todo lo que ya hizo en web, WhatsApp o Call Center, sin volver a pedirle sus datos.</p>
 
       <section className="mt-6 max-w-3xl">
-        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-[#1F2933]">Buscar paciente por WhatsApp o nombre</label>
+        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-[#1F2933]">Buscar paciente por nombre o cuenta</label>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#5B6B7A]" />
             <input id="buscar" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && buscar()}
-              aria-describedby="buscar-h" placeholder="Ej. Ana o 4567" className={`${fieldInput} h-12 pl-12`} />
+              aria-describedby="buscar-h" placeholder="Ej. Ana o ana@demo.mx" className={`${fieldInput} h-12 pl-12`} />
           </div>
           <button onClick={buscar} className={outlineBtn}><Icon n="search" />Buscar</button>
         </div>
-        <p id="buscar-h" className="mt-1 t-meta text-[#5B6B7A]">Prueba con “Ana” o con los últimos dígitos de su WhatsApp.</p>
+        <p id="buscar-h" className="mt-1 t-meta text-[#5B6B7A]">Prueba con “Ana” o con su cuenta del portal (ana@demo.mx).</p>
 
         <div role="status" className="mt-4">
           {!t && <p className="rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]">No hay trámites activos. Inicia uno desde el portal del paciente.</p>}
-          {t && buscado !== null && !encontrado && <p className="t-body text-[#1F2933]">No encontramos pacientes con “{buscado}”. Revisa el nombre o el número.</p>}
+          {t && buscado !== null && !encontrado && <p className="t-body text-[#1F2933]">No encontramos pacientes con “{buscado}”. Revisa el nombre o la cuenta.</p>}
         </div>
         {t && encontrado && (
           <ul aria-label="Resultados de búsqueda">
             <li className="flex flex-col gap-2 border-y border-[#D6E4F5] py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="t-sub font-bold text-[#1F2933]">{t.paciente.nombre}{t.paciente.whatsapp && <span className="font-normal text-[#43474A]"> · WhatsApp {ultimos4(t.paciente.whatsapp)}</span>}</p>
+                <p className="t-sub font-bold text-[#1F2933]">{t.paciente.nombre}<span className="font-normal text-[#43474A]"> · {t.paciente.cuenta}</span></p>
                 <p className="t-meta text-[#5B6B7A]">{t.estudio?.nombre ?? 'Estudio por elegir'} · Folio {t.id} (de ejemplo)</p>
               </div>
               <button onClick={() => setAbierta(true)} aria-pressed={abierta} className={`${link} shrink-0`}>{abierta ? 'Ficha abierta' : 'Abrir ficha'}<Icon n="arrow" /></button>
@@ -91,16 +89,12 @@ function Ficha({ t }: { t: Tramite }) {
 
   const p = t.paciente
   const confirmada = t.estado === 'confirmada'
-  const paso = t.estado === 'en_curso' ? t.paso : 5
+  const paso = t.estado === 'en_curso' ? t.paso : TOTAL_PASOS
   const c = findClinic(t.clinica)
-  const falta = [!t.estudio && 'estudio', !t.clinica && 'clínica', !(t.fecha && t.hora) && 'fecha y hora'].filter(Boolean) as string[]
+  const falta = [!t.estudio && 'estudio', !t.clinica && 'clínica', !(t.fecha && t.hora && !yaPaso(t.fecha, t.hora)) && 'fecha y hora vigentes'].filter(Boolean) as string[]
   const autor = sesion?.rol === 'admin' ? 'Administración' : 'Asesor'
   const avisar = (m: string) => setAviso(m)
 
-  const enviarCodigo = () => {
-    update((x) => conEvento({ ...x, paciente: { ...x.paciente, codigoEnviado: true } }, 'paciente.codigo_enviado', `${autor} envió un código de verificación a WhatsApp ${ultimos4(x.paciente.whatsapp)} (demo)`, 'call_center'))
-    avisar(`Código enviado a WhatsApp ${ultimos4(p.whatsapp)} (demo)`)
-  }
   const confirmarClinica = (nombre: string) => {
     update((x) => conEvento({ ...x, clinica: nombre, clinicaPendiente: false }, 'asesor.clinica_confirmada', `${autor} confirmó la clínica ${nombre}`, 'call_center'))
     avisar(`Clínica confirmada: ${nombre}`)
@@ -116,7 +110,7 @@ function Ficha({ t }: { t: Tramite }) {
     avisar('Referencia enviada')
   }
   const cerrar = () => {
-    update((x) => conEvento({ ...x, estado: 'confirmada', paso: 5, metodoPago: x.metodoPago ?? 'en_clinica', desdeResumen: false },
+    update((x) => conEvento({ ...x, estado: 'confirmada', paso: TOTAL_PASOS, metodoPago: x.metodoPago ?? 'en_clinica', desdeResumen: false },
       'cita.confirmada', `${autor} cerró el trámite como confirmado · ${x.fecha ? fechaLarga(x.fecha) : ''} ${x.hora ?? ''} · ${METODO[x.metodoPago ?? 'en_clinica']}`, 'call_center'))
     avisar('Trámite cerrado: cita confirmada')
   }
@@ -136,22 +130,8 @@ function Ficha({ t }: { t: Tramite }) {
           <h2 id="fp-t" className="t-card font-head text-[#1F2933]">Ficha del paciente</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <div><dt className="t-meta text-[#5B6B7A]">Nombre</dt><dd className="t-body font-semibold text-[#1F2933]">{p.nombre}</dd></div>
-            <div><dt className="t-meta text-[#5B6B7A]">WhatsApp</dt><dd className="t-body font-semibold text-[#1F2933]">{p.whatsapp ? `+52 ${ultimos4(p.whatsapp)}` : 'Sin registrar'}</dd></div>
-            <div className="sm:col-span-2"><dt className="t-meta text-[#5B6B7A]">Identidad</dt><dd className="mt-1">
-              {p.verificado
-                ? <span className="inline-flex items-center gap-2 rounded-full border border-[#006D3D] bg-white px-3 py-1 t-meta font-semibold text-[#006D3D]"><Icon n="check" size={16} />Identidad verificada</span>
-                : <Pendiente>Sin verificar</Pendiente>}
-            </dd></div>
+            <div><dt className="t-meta text-[#5B6B7A]">Cuenta del portal</dt><dd className="t-body font-semibold text-[#1F2933] break-words">{p.cuenta}</dd></div>
           </dl>
-          {!p.verificado && (
-            <div className="mt-4">
-              <button onClick={enviarCodigo} disabled={!p.whatsapp} aria-describedby={!p.whatsapp ? 'cod-h' : undefined}
-                className={`${outlineBtn} disabled:cursor-not-allowed disabled:border-[#D6E4F5] disabled:bg-[#ECF3F9] disabled:text-[#43474A]`}>
-                <Icon n="chat" />Enviar código de verificación
-              </button>
-              <p id="cod-h" className="mt-1 t-meta text-[#5B6B7A]">{p.whatsapp ? 'El paciente lo escribe en el paso 4 del portal. Código de demostración: 123456.' : 'El paciente aún no registra su WhatsApp.'}</p>
-            </div>
-          )}
         </section>
 
         {/* trámite */}
@@ -163,8 +143,8 @@ function Ficha({ t }: { t: Tramite }) {
               : t.estado === 'pago_pendiente' ? <Pendiente>Pago pendiente en Oxxo</Pendiente> : <Pendiente>En curso</Pendiente>}
           </div>
           <div className="mt-4">
-            <p className="t-sub font-semibold text-[#1F2933]">Paso {paso} de 5 · {PASOS[paso]}</p>
-            <div role="progressbar" aria-valuemin={0} aria-valuemax={5} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de 5: ${PASOS[paso]}${confirmada ? ', confirmado' : ''}`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-[#EBF4FC]">
+            <p className="t-sub font-semibold text-[#1F2933]">Paso {paso} de {TOTAL_PASOS} · {PASOS[paso]}</p>
+            <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}: ${PASOS[paso]}${confirmada ? ', confirmado' : ''}`} aria-label="Avance del trámite" className="mt-2 h-2 rounded-full bg-[#EBF4FC]">
               <div className="h-full rounded-full bg-[#005BB0]" style={{ width: `${confirmada ? 100 : avance(paso)}%` }} />
             </div>
           </div>

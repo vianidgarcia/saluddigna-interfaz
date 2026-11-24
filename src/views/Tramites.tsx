@@ -2,7 +2,7 @@ import { useApp } from '../context'
 import { Back } from '../components/Back'
 import { Icon } from '../components/Icon'
 import { container, outlineBtn, solidBtn } from '../components/ui'
-import { CANAL, ICONO_CANAL, esNotaInterna, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
+import { TOTAL_PASOS, CANAL, ICONO_CANAL, esNotaInterna, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
 
 export function Tramites() {
   const { tramite: t, continuar, startAgendar } = useApp()
@@ -19,7 +19,7 @@ export function Tramites() {
     )
   }
   const confirmada = t.estado === 'confirmada'
-  const paso = t.estado === 'pago_pendiente' ? 5 : t.paso
+  const paso = t.estado === 'pago_pendiente' ? TOTAL_PASOS : t.paso
   return (
     <div className={`${container} py-8 lg:py-12`}>
       <Back />
@@ -32,7 +32,7 @@ export function Tramites() {
             <p className="mt-2">
               {confirmada
                 ? <span className="inline-flex items-center gap-2 t-body font-semibold text-[#006D3D]"><Icon n="check" size={18} />Cita confirmada</span>
-                : <span className="inline-flex items-center gap-2 rounded-full bg-[#FDF1DB] px-3 py-1 t-meta font-semibold text-[#7A4E00]"><span aria-hidden="true" className="size-2 rounded-full bg-[#F2A00D]" />Paso {paso} de 5 · {estadoTexto(t)}</span>}
+                : <span className="inline-flex items-center gap-2 rounded-full bg-[#FDF1DB] px-3 py-1 t-meta font-semibold text-[#7A4E00]"><span aria-hidden="true" className="size-2 rounded-full bg-[#F2A00D]" />Paso {paso} de {TOTAL_PASOS} · {estadoTexto(t)}</span>}
             </p>
             <p className="mt-2 t-meta text-[#5B6B7A]">Folio {t.id} (de ejemplo) · Iniciado en {CANAL[t.canalInicio]} · Último movimiento por {CANAL[t.ultimoCanal]}, {hace(t.ultimaActualizacion)}</p>
           </div>
