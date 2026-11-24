@@ -15,15 +15,15 @@ const QUICK = [
   ['beaker', 'Preparaciones', 'Qué hacer antes de tu estudio.'],
 ]
 
-function Hero({ onContinue }: { onContinue: () => void }) {
-  const { go, toast } = useApp()
-  const quickAct = (t: string) => (t === 'Agendar cita' ? go('agendar') : t === 'Mis resultados' ? go('resultados') : toast())
+function Hero() {
+  const { go, toast, startAgendar } = useApp()
+  const quickAct = (t: string) => (t === 'Agendar cita' ? startAgendar() : t === 'Mis resultados' ? go('resultados') : toast())
   return (
     <div className="bg-[#ECF3F9] pb-10 pt-8 lg:pb-16 lg:pt-12">
       <div className={container}>
         <h1 className="t-greeting font-head text-[#1F2933]">Hola, Ana</h1>
         <div className="mt-6 grid gap-6 lg:grid-cols-12 lg:items-stretch lg:gap-8">
-          <div className="lg:col-span-7"><ContinueCard onContinue={onContinue} /></div>
+          <div className="lg:col-span-7"><ContinueCard /></div>
           <div className="lg:col-span-5"><Search /></div>
         </div>
         <section aria-labelledby="acc-t">
@@ -64,10 +64,10 @@ function ClinicRow({ clinic }: { clinic: Clinic }) {
   )
 }
 
-export function Home({ clinic, onContinue }: { clinic: Clinic; onContinue: () => void }) {
+export function Home({ clinic }: { clinic: Clinic }) {
   return (
     <>
-      <Hero onContinue={onContinue} />
+      <Hero />
       <ClinicRow clinic={clinic} />
       <Packages />
       <Help />

@@ -9,3 +9,4 @@ export const STUDIES: Record<string, string[]> = {
   Lentes: ['Examen de la vista', 'Lentes monofocales', 'Lentes bifocales'],
 }
 export const CHIPS = Object.keys(STUDIES)
+export const categoriaDe = (nombre: string) => CHIPS.find((c) => STUDIES[c].includes(nombre)) ?? ''

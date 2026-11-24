@@ -11,3 +11,7 @@ export const CLINICS: Clinic[] = [
   { name: 'Culiacán Nakayama', km: 7.2, address: 'Av. Gral. Fernando Cuen #5903-3 Sur, Col. Antonio Nakayama', phone: '(667) 170 9180' },
 ]
 export const tel = (p: string) => 'tel:+52' + p.replace(/\D/g, '')
+export const findClinic = (name: string | null) => CLINICS.find((c) => c.name === name) ?? null
+/** Clínicas filtradas por texto y ordenadas por distancia (panel y paso 2 del agendado). */
+export const clinicasPorDistancia = (q = '') =>
+  CLINICS.filter((c) => (c.name + c.address).toLowerCase().includes(q.toLowerCase())).sort((a, b) => a.km - b.km)

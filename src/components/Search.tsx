@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../context'
-import { CHIPS, STUDIES } from '../data/studies'
+import { CHIPS, STUDIES, categoriaDe } from '../data/studies'
 import { Icon } from './Icon'
 import { WA, link, chip } from './ui'
 
 export function Search() {
-  const { go } = useApp()
+  const { startAgendar } = useApp()
   const [q, setQ] = useState('')
   const results = useMemo(() => {
     const t = q.trim().toLowerCase()
@@ -34,7 +34,7 @@ export function Search() {
                 {results.map((n) => (
                   <li key={n} className="flex min-h-14 items-center justify-between gap-3 border-t border-[#D6E4F5] py-2 first:border-t-0">
                     <div><p className="text-base font-semibold text-[#1F2933]">{n}</p><p className="t-meta text-[#5B6B7A]">Precio según tu clínica</p></div>
-                    <button onClick={() => go('agendar')} className={`${link} shrink-0`}>Agendar cita</button>
+                    <button onClick={() => startAgendar({ categoria: categoriaDe(n), nombre: n })} className={`${link} shrink-0`}>Agendar cita</button>
                   </li>
                 ))}
               </ul>

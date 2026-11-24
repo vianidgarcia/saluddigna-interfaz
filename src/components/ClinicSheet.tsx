@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CLINICS, type Clinic } from '../data/clinics'
+import { clinicasPorDistancia, type Clinic } from '../data/clinics'
 import { Icon } from './Icon'
 import { NB, outlineBtn } from './ui'
 
@@ -14,7 +14,7 @@ export function ClinicSheet({ current, onSelect, onClose }: { current: Clinic; o
     window.addEventListener('keydown', k)
     return () => { window.removeEventListener('keydown', k); prev?.focus?.() }
   }, [onClose])
-  const list = CLINICS.filter((c) => (c.name + c.address).toLowerCase().includes(q.toLowerCase())).sort((a, b) => a.km - b.km)
+  const list = clinicasPorDistancia(q)
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-end lg:items-stretch">
       <div onClick={onClose} className="absolute inset-0 bg-[#1F2933]/50 [animation:fade_200ms_ease-out]" />

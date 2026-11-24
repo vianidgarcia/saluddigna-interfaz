@@ -4,7 +4,7 @@ import { Icon } from './Icon'
 import { NB, container, link, solidBtn } from './ui'
 
 export function Packages() {
-  const { go, toast } = useApp()
+  const { startAgendar, toast } = useApp()
   return (
     <section id="paquetes" className={`${container} scroll-mt-16 pt-10 lg:pt-16`} aria-labelledby="paq">
       <h2 id="paq" className="t-section font-head text-[#1F2933]">Paquetes de prevención</h2>
@@ -15,7 +15,7 @@ export function Packages() {
             <h3 className="mt-4 t-card font-head text-[#1F2933]">{t}{NB}–{NB}{p}</h3>
             <p className="mt-1 t-meta text-[#5B6B7A]">IVA incluido</p>
             <button onClick={() => toast()} className={`${link} mt-4 mb-auto self-start`}>Ver preparaciones</button>
-            <button onClick={() => go('agendar')} className={`${solidBtn} mt-6 w-full`}><Icon n="calendar" />Agendar cita</button>
+            <button onClick={() => startAgendar({ categoria: 'Paquetes', nombre: t, precio: p })} className={`${solidBtn} mt-6 w-full`}><Icon n="calendar" />Agendar cita</button>
           </li>
         ))}
       </ul>
