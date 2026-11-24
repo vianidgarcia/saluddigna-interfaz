@@ -93,11 +93,11 @@ export function MapaClinicas({ clinicas, elegida, ubicacion, onElegir, alto = 'h
   return (
     <figure className="m-0">
       <div ref={div} role="region" aria-label={`Mapa con ${clinicas.length} clínicas. También puedes elegir en la lista.`}
-        className={`isolate z-0 w-full overflow-hidden rounded-lg border border-[#D6E4F5] bg-[#ECF3F9] ${alto}`} />
-      <figcaption className="mt-1 t-meta text-[#5B6B7A]">
+        className={`isolate z-0 w-full overflow-hidden rounded-lg border border-borde bg-banda ${alto}`} />
+      <figcaption className="mt-1 t-meta text-secundario">
         Toca un punto para elegir la clínica. {clinicas.length === 1 ? '1 clínica en el mapa.' : `${clinicas.length} clínicas en el mapa.`}
       </figcaption>
-      <p role="status" className="mt-1 t-body text-[#1F2933] empty:hidden">
+      <p role="status" className="mt-1 t-body text-titulo empty:hidden">
         {sel && <><span className="font-semibold">Elegiste:</span> {sel.name} · {sel.ciudad}, {sel.estado}</>}
       </p>
     </figure>

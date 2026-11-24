@@ -11,7 +11,7 @@ class SinMapa extends Component<{ alto: string; children: ReactNode }, { error: 
   render() {
     if (!this.state.error) return this.props.children
     return (
-      <p role="status" className={`grid w-full place-items-center rounded-lg border border-[#D6E4F5] bg-[#ECF3F9] px-4 text-center t-body text-[#1F2933] ${this.props.alto}`}>
+      <p role="status" className={`grid w-full place-items-center rounded-lg border border-borde bg-banda px-4 text-center t-body text-titulo ${this.props.alto}`}>
         El mapa no está disponible en este momento (revisa tu conexión). Puedes elegir tu clínica en la lista.
       </p>
     )
@@ -22,7 +22,7 @@ export function MapaClinicasDiferido(props: Props) {
   const alto = props.alto ?? 'h-72 lg:h-96'
   return (
     <SinMapa alto={alto}>
-      <Suspense fallback={<div role="status" className={`grid w-full place-items-center rounded-lg border border-[#D6E4F5] bg-[#ECF3F9] t-meta text-[#5B6B7A] ${alto}`}>Cargando mapa…</div>}>
+      <Suspense fallback={<div role="status" className={`grid w-full place-items-center rounded-lg border border-borde bg-banda t-meta text-secundario ${alto}`}>Cargando mapa…</div>}>
         <Mapa {...props} />
       </Suspense>
     </SinMapa>

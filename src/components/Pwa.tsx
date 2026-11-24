@@ -21,16 +21,16 @@ export function AvisoConexion() {
   return (
     <div role="status" aria-live="polite">
       {!enLinea && (
-        <div className="border-b border-[#D6E4F5] bg-[#FDF1DB]">
-          <p className={`${container} flex items-start gap-2 py-3 t-body text-[#1F2933]`}>
-            <Icon n="alert" className="mt-0.5 text-[#7A4E00]" />
+        <div className="border-b border-borde bg-ambar-fondo">
+          <p className={`${container} flex items-start gap-2 py-3 t-body text-titulo`}>
+            <Icon n="alert" className="mt-0.5 text-ambar-texto" />
             <span><strong className="font-bold">Sin conexión.</strong> Puedes seguir usando el portal: tus cambios se guardan en este dispositivo. WhatsApp y llamadas necesitan conexión.</span>
           </p>
         </div>
       )}
       {enLinea && recuperada && (
-        <div className="border-b border-[#D6E4F5] bg-[#EBF4FC]">
-          <p className={`${container} flex items-center gap-2 py-3 t-body text-[#1F2933]`}><Icon n="check" className="text-[#005BB0]" />Conexión restablecida.</p>
+        <div className="border-b border-borde bg-resaltado">
+          <p className={`${container} flex items-center gap-2 py-3 t-body text-titulo`}><Icon n="check" className="text-enlace" />Conexión restablecida.</p>
         </div>
       )}
     </div>
@@ -48,7 +48,7 @@ export function BotonInstalar({ className = '' }: { className?: string }) {
     window.addEventListener('appinstalled', listo)
     return () => { window.removeEventListener('beforeinstallprompt', antes); window.removeEventListener('appinstalled', listo) }
   }, [])
-  if (instalada) return <span className={`inline-flex min-h-12 items-center gap-2 text-[#5B6B7A] ${className}`}><Icon n="check" size={18} />App instalada</span>
+  if (instalada) return <span className={`inline-flex min-h-12 items-center gap-2 text-secundario ${className}`}><Icon n="check" size={18} />App instalada</span>
   if (!prompt) return null
   const instalar = async () => {
     await prompt.prompt()
@@ -57,7 +57,7 @@ export function BotonInstalar({ className = '' }: { className?: string }) {
     setPrompt(null)
   }
   return (
-    <button onClick={instalar} className={`inline-flex min-h-12 items-center gap-2 rounded-md font-semibold text-[#005BB0] underline underline-offset-4 hover:text-[#003F7A] ${className}`}>
+    <button onClick={instalar} className={`inline-flex min-h-12 items-center gap-2 rounded-md font-semibold text-enlace underline underline-offset-4 hover:text-enlace-hover ${className}`}>
       <Icon n="download" size={18} />Instalar app
     </button>
   )

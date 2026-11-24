@@ -3,13 +3,64 @@
 
 @theme {
   --font-sans: 'Open Sans', system-ui, sans-serif;
+
+  /* Paleta con nombre (modo claro). El modo oscuro redefine estas variables más abajo. */
+  --color-fondo: #FFFFFF;
+  --color-superficie: #FFFFFF;
+  --color-banda: #ECF3F9;
+  --color-resaltado: #EBF4FC;
+  --color-resaltado-2: #D6E4F5;
+  --color-resaltado-3: #C4D9F0;
+  --color-borde: #D6E4F5;
+  --color-borde-accion: #0074D9;
+  --color-titulo: #1F2933;
+  --color-cuerpo: #43474A;
+  --color-secundario: #5B6B7A;
+  --color-enlace: #005BB0;
+  --color-enlace-hover: #003F7A;
+  --color-icono: #0074D9;
+  --color-accion: #0074D9;
+  --color-accion-hover: #005BB0;
+  --color-accion-activo: #004480;
+  --color-ambar: #F2A00D;
+  --color-ambar-fondo: #FDF1DB;
+  --color-ambar-texto: #7A4E00;
+  --color-verde: #006D3D;
+  --color-error: #B3261E;
+  --color-foco: #0074D9;
 }
+
+/* Modo oscuro: lo activa data-tema="oscuro" en <html> (lo fija index.html antes de pintar, según la elección
+   guardada o la preferencia del sistema). Los rellenos de acción conservan su azul: el texto blanco sigue en AA. */
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+  --color-fondo: #0E1620;
+  --color-superficie: #16212D;
+  --color-banda: #111B26;
+  --color-resaltado: #1C2D40;
+  --color-resaltado-2: #26405C;
+  --color-resaltado-3: #2F4E70;
+  --color-borde: #33465B;
+  --color-borde-accion: #4DA3FF;
+  --color-titulo: #E9EEF3;
+  --color-cuerpo: #C9D2DC;
+  --color-secundario: #A3B1BF;
+  --color-enlace: #8EC5FF;
+  --color-enlace-hover: #B9DCFF;
+  --color-icono: #6DB3FF;
+  --color-ambar-fondo: #3B2C0C;
+  --color-ambar-texto: #F6C76B;
+  --color-verde: #5FD89C;
+  --color-error: #FF8A80;
+  --color-foco: #8EC5FF;
+}
+:root { color-scheme: light; }
 
 @layer base {
   html { scroll-behavior: smooth; }
-  body { font-family: var(--font-sans); font-size: 16px; color: #43474A; background: #fff; -webkit-font-smoothing: antialiased; }
+  body { font-family: var(--font-sans); font-size: 16px; color: var(--color-cuerpo); background: var(--color-fondo); -webkit-font-smoothing: antialiased; }
   button, a { cursor: pointer; }
-  ::placeholder { color: #5B6B7A; opacity: 1; }
+  ::placeholder { color: var(--color-secundario); opacity: 1; }
   @keyframes sheet-right { from { transform: translateX(100%); } to { transform: none; } }
   @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -28,8 +79,13 @@
 @utility t-meta { font-size: 14px; line-height: 1.4; }
 
 /* Anillo de enfoque: reglas sin capa para que ninguna utilidad las sobrescriba */
-:focus-visible { outline: 2px solid #0074D9; outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 2px; }
 .on-dark :focus-visible { outline-color: #FFFFFF; }
 main:focus, main:focus-visible { outline: none; }
 /* Encabezados que reciben el foco al cambiar de paso: el foco se anuncia, no se dibuja */
 [data-focus-target]:focus { outline: none; }
+
+/* Leaflet en modo oscuro: controles y atribución con la paleta del sitio (los mosaicos del mapa no cambian) */
+:root[data-tema="oscuro"] .leaflet-bar a { background: var(--color-superficie); color: var(--color-titulo); border-color: var(--color-borde); }
+:root[data-tema="oscuro"] .leaflet-control-attribution { background: rgb(22 33 45 / 0.85); color: var(--color-cuerpo); }
+:root[data-tema="oscuro"] .leaflet-control-attribution a { color: var(--color-enlace); }

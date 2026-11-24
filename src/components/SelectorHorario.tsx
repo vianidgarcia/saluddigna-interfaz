@@ -36,14 +36,14 @@ export function SelectorHorario({ fecha, hora, onFecha, onHora, id = 'h' }: {
       <div>
         {fechaValida
           ? <SelectorHora key={fechaValida} id={id} fecha={fechaValida} hora={hora} onHora={onHora} />
-          : <p className="rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]">Elige un día en el calendario para ver las horas disponibles.</p>}
-        {fecha && !fechaValida && <p role="status" className="mt-3 t-body text-[#1F2933]">La fecha que tenías guardada ya pasó o no tiene lugar. Elige otra.</p>}
+          : <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">Elige un día en el calendario para ver las horas disponibles.</p>}
+        {fecha && !fechaValida && <p role="status" className="mt-3 t-body text-titulo">La fecha que tenías guardada ya pasó o no tiene lugar. Elige otra.</p>}
       </div>
     </div>
   )
 }
 
-/* ---------- calendario mensual ---------- */
+/* ---------- calendario mensual: siempre 6 semanas; solo los días disponibles se pueden elegir ---------- */
 function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
   id: string; fecha: string | null; hoy: string; max: string; habilitado: (iso: string) => boolean; onFecha: (v: string) => void
 }) {
@@ -59,19 +59,19 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
   const puedeAtras = mes.y > hoyD.getFullYear() || (mes.y === hoyD.getFullYear() && mes.m > hoyD.getMonth())
   const puedeAdelante = mes.y < maxD.getFullYear() || (mes.y === maxD.getFullYear() && mes.m < maxD.getMonth())
 
+  // 42 celdas (6 semanas, de lunes a domingo) con los días del mes anterior y siguiente para completar
   const semanas = useMemo(() => {
     const primero = new Date(mes.y, mes.m, 1)
     const offset = (primero.getDay() + 6) % 7 // lunes = 0
-    const dias = new Date(mes.y, mes.m + 1, 0).getDate()
-    const celdas: (string | null)[] = [...Array(offset).fill(null), ...Array.from({ length: dias }, (_, i) => isoDia(new Date(mes.y, mes.m, i + 1)))]
-    while (celdas.length % 7) celdas.push(null)
-    return Array.from({ length: celdas.length / 7 }, (_, i) => celdas.slice(i * 7, i * 7 + 7))
+    const celdas = Array.from({ length: 42 }, (_, i) => isoDia(new Date(mes.y, mes.m, 1 - offset + i)))
+    return Array.from({ length: 6 }, (_, i) => celdas.slice(i * 7, i * 7 + 7))
   }, [mes])
 
-  // si el día enfocable no está en el mes visible, usa el primero habilitado
   const enMes = (iso: string) => { const d = parse(iso); return d.getFullYear() === mes.y && d.getMonth() === mes.m }
+  const elegible = (iso: string) => enMes(iso) && habilitado(iso)
   // nunca un día deshabilitado (p. ej. hoy después del último horario): no podría recibir el foco
-  const tabDia = enMes(foco) && habilitado(foco) ? foco : (semanas.flat().find((d) => d && habilitado(d)) ?? semanas.flat().find(Boolean)!)
+  const tabDia = elegible(foco) ? foco : (semanas.flat().find(elegible) ?? null)
+  const hayDias = semanas.flat().some(elegible)
 
   useEffect(() => {
     if (!moverFoco.current) return
@@ -96,37 +96,47 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
   }
 
   const titulo = `${MESES[mes.m]} ${mes.y}`
-  const navBtn = 'inline-flex min-h-12 items-center gap-1 rounded-lg border border-[#D6E4F5] bg-white px-3 text-base font-semibold text-[#005BB0] transition-colors hover:border-[#0074D9] hover:bg-[#EBF4FC] disabled:cursor-not-allowed disabled:border-[#D6E4F5] disabled:bg-[#ECF3F9] disabled:text-[#5B6B7A]'
+  const navBtn = 'inline-flex min-h-12 items-center gap-1 rounded-lg px-2 text-base font-semibold text-enlace transition-colors hover:bg-resaltado disabled:cursor-not-allowed disabled:text-secundario disabled:hover:bg-transparent'
 
   return (
     <div>
-      <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:justify-between">
-        <p id={`${id}-mes`} className="col-span-2 order-first text-center t-sub font-bold capitalize text-[#1F2933] sm:order-none" aria-live="polite">{titulo}</p>
-        <button onClick={() => cambiarMes(-1)} disabled={!puedeAtras} className={`${navBtn} justify-center sm:order-first`}><Icon n="left" /><span>Anterior</span></button>
-        <button onClick={() => cambiarMes(1)} disabled={!puedeAdelante} className={`${navBtn} justify-center`}><span>Siguiente</span><Icon n="left" className="rotate-180" /></button>
+      <div className="flex items-center justify-between gap-2">
+        <p id={`${id}-mes`} className="t-sub font-bold capitalize text-titulo" aria-live="polite">{titulo}</p>
+        <div className="flex items-center">
+          <button onClick={() => cambiarMes(-1)} disabled={!puedeAtras} className={navBtn}><Icon n="left" /><span>Anterior</span></button>
+          <button onClick={() => cambiarMes(1)} disabled={!puedeAdelante} className={navBtn}><span>Siguiente</span><Icon n="left" className="rotate-180" /></button>
+        </div>
       </div>
-      <table ref={grid} role="grid" aria-labelledby={`${id}-mes`} className="mt-3 w-full table-fixed border-separate border-spacing-0 sm:border-spacing-1">
+      <table ref={grid} role="grid" aria-labelledby={`${id}-mes`} className="mt-2 w-full table-fixed border-collapse">
         <thead>
-          <tr>{SEMANA.map(([c, l], i) => <th key={i} scope="col" abbr={l} className="pb-1 t-meta font-semibold text-[#5B6B7A]"><span aria-hidden="true">{c}</span><span className="sr-only">{l}</span></th>)}</tr>
+          <tr>{SEMANA.map(([c, l], i) => <th key={i} scope="col" abbr={l} className="pb-1 t-meta font-semibold text-secundario"><span aria-hidden="true">{c}</span><span className="sr-only">{l}</span></th>)}</tr>
         </thead>
         <tbody>
-          {/* solo se dibujan los días disponibles; las semanas sin ninguno se omiten */}
-          {semanas.filter((s) => s.some((iso) => iso && habilitado(iso))).map((s, i) => (
+          {semanas.map((s, i) => (
             <tr key={i}>
-              {s.map((iso, j) => {
-                if (!iso || !habilitado(iso)) return <td key={j} />
+              {s.map((iso) => {
+                const dia = parse(iso).getDate()
+                const propio = enMes(iso)
+                if (!elegible(iso)) {
+                  // fuera del mes o sin lugar: se ve atenuado y no se puede elegir
+                  return (
+                    <td key={iso} className="p-0.5 text-center">
+                      <span aria-hidden={!propio} className={`mx-auto flex h-12 w-full max-w-12 items-center justify-center rounded-full text-base ${propio ? 'text-secundario' : 'text-secundario font-normal'}`}>
+                        {dia}{propio && <span className="sr-only">, no disponible</span>}
+                      </span>
+                    </td>
+                  )
+                }
                 const sel = iso === fecha
                 const esHoy = iso === hoy
                 return (
-                  <td key={j} className="p-0">
+                  <td key={iso} className="p-0.5 text-center">
                     <button data-dia={iso} tabIndex={iso === tabDia ? 0 : -1} aria-pressed={sel}
                       aria-label={`${fechaLarga(iso)}${esHoy ? ', hoy' : ''}`}
                       onClick={() => { setFoco(iso); onFecha(iso) }} onKeyDown={(e) => onKey(e, iso)}
-                      className={`flex h-12 w-full flex-col items-center justify-center rounded-lg text-base transition-colors ${
-                        sel ? 'bg-[#005BB0] font-semibold text-white'
-                          : `border ${esHoy ? 'border-[#005BB0]' : 'border-[#D6E4F5]'} bg-white text-[#1F2933] hover:border-[#0074D9] hover:bg-[#EBF4FC]`}`}>
-                      <span>{parse(iso).getDate()}</span>
-                      {esHoy && <span className={`text-[11px] leading-none ${sel ? 'text-white' : 'text-[#005BB0]'}`} aria-hidden="true">Hoy</span>}
+                      className={`mx-auto flex h-12 w-full max-w-12 items-center justify-center rounded-full text-base font-semibold transition-colors ${
+                        sel ? 'bg-accion-hover text-white' : `text-titulo hover:bg-resaltado ${esHoy ? 'ring-2 ring-inset ring-borde-accion' : ''}`}`}>
+                      {dia}
                     </button>
                   </td>
                 )
@@ -135,75 +145,107 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
           ))}
         </tbody>
       </table>
-      {!semanas.some((s) => s.some((iso) => iso && habilitado(iso))) && (
-        <p className="rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]">No hay días disponibles en {titulo}. Prueba con otro mes.</p>
-      )}
-      <p className="mt-1 t-meta text-[#5B6B7A]">Solo se muestran los días con horarios disponibles, desde hoy y hasta {DIAS_MAXIMOS} días después. Usa las flechas del teclado para moverte entre días.</p>
+      {!hayDias && <p className="mt-2 rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">No hay días disponibles en {titulo}. Prueba con otro mes.</p>}
+      <p className="mt-2 t-meta text-secundario">Los días atenuados no están disponibles. Puedes agendar desde hoy y hasta {DIAS_MAXIMOS} días después; usa las flechas del teclado para moverte entre días.</p>
     </div>
   )
 }
 
-/* ---------- selector de hora: hora + minutos ---------- */
+/* ---------- selector de hora (estilo "time picker" digital, sin librerías) ---------- */
 function SelectorHora({ id, fecha, hora, onHora }: { id: string; fecha: string; hora: string | null; onHora: (h: string | null) => void }) {
   const inicial = hora && disponible(fecha, hora) ? hora : null
-  const [hh, setHh] = useState(inicial?.slice(0, 2) ?? '')
-  const [mm, setMm] = useState(inicial?.slice(3) ?? '')
   // la hora guardada ya no sirve (pasó o se ocupó): se limpia
   useEffect(() => { if (hora && !inicial) onHora(null) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const [abierto, setAbierto] = useState(false)
+  const [hh, setHh] = useState(inicial?.slice(0, 2) ?? '')
+  const campo = useRef<HTMLButtonElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
 
   // solo horas con al menos un horario libre, y solo minutos libres
   const horas = Array.from(new Set(HORAS.map((h) => h.slice(0, 2)))).filter((h) => HORAS.some((x) => x.startsWith(h + ':') && disponible(fecha, x)))
-  const minutosDe = (h: string) => HORAS.filter((x) => x.startsWith(h + ':')).map((x) => x.slice(3))
-  const libres = (h: string) => minutosDe(h).filter((m) => disponible(fecha, `${h}:${m}`))
+  const libres = (h: string) => HORAS.filter((x) => x.startsWith(h + ':') && disponible(fecha, x)).map((x) => x.slice(3))
   const siguiente = HORAS.find((h) => disponible(fecha, h)) ?? null
+  const elegida = inicial ?? (hora && disponible(fecha, hora) ? hora : null)
+
+  const cerrar = (devolverFoco = true) => { setAbierto(false); if (devolverFoco) campo.current?.focus() }
+  const abrir = () => { setHh(elegida?.slice(0, 2) ?? hh ?? ''); setAbierto(true) }
+
+  useEffect(() => {
+    if (!abierto) return
+    // foco en la hora elegida (o la primera) y desplazamiento para que se vea
+    const b = panel.current?.querySelector<HTMLButtonElement>('[data-col="h"][aria-pressed="true"]') ?? panel.current?.querySelector<HTMLButtonElement>('[data-col="h"]')
+    b?.focus(); b?.scrollIntoView({ block: 'nearest' })
+    const fuera = (e: MouseEvent) => { if (!panel.current?.contains(e.target as Node) && !campo.current?.contains(e.target as Node)) cerrar(false) }
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrar() }
+    document.addEventListener('mousedown', fuera)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('mousedown', fuera); document.removeEventListener('keydown', esc) }
+  }, [abierto]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const elegirHora = (h: string) => {
     setHh(h)
-    const m = libres(h)[0] ?? ''
-    setMm(m)
-    onHora(m ? `${h}:${m}` : null)
+    requestAnimationFrame(() => panel.current?.querySelector<HTMLButtonElement>('[data-col="m"]')?.focus())
   }
-  const elegirMin = (m: string) => { setMm(m); onHora(hh && m ? `${hh}:${m}` : null) }
-  const usar = (h: string) => { setHh(h.slice(0, 2)); setMm(h.slice(3)); onHora(h) }
+  const elegirMin = (m: string) => { onHora(`${hh}:${m}`); cerrar() }
 
-  const select = 'h-12 w-full appearance-none rounded-lg border border-[#D6E4F5] bg-white pl-4 pr-10 text-base text-[#1F2933] transition-colors hover:border-[#0074D9]'
-  const elegida = hh && mm ? `${hh}:${mm}` : null
+  // flechas arriba/abajo dentro de cada columna
+  const onKeyCol = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    e.preventDefault()
+    const bs = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('button')]
+    const i = bs.indexOf(document.activeElement as HTMLButtonElement)
+    const n = bs[Math.max(0, Math.min(bs.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))]
+    n?.focus(); n?.scrollIntoView({ block: 'nearest' })
+  }
+
+  const opcion = (on: boolean) => `flex min-h-12 w-full items-center justify-center rounded-lg text-base transition-colors ${on ? 'bg-accion-hover font-semibold text-white' : 'text-titulo hover:bg-resaltado'}`
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <p className="t-sub font-bold text-[#1F2933] first-letter:uppercase">{fechaLarga(fecha)}</p>
-        <span className="rounded-full bg-[#EBF4FC] px-3 py-1 t-meta font-semibold text-[#1F2933]">Horarios de demostración</span>
+        <p className="t-sub font-bold text-titulo first-letter:uppercase">{fechaLarga(fecha)}</p>
+        <span className="rounded-full bg-resaltado px-3 py-1 t-meta font-semibold text-titulo">Horarios de demostración</span>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor={`${id}-hh`} className="text-base font-semibold text-[#1F2933]">Hora</label>
-          <div className="relative mt-2">
-            <select id={`${id}-hh`} value={hh} onChange={(e) => elegirHora(e.target.value)} className={select}>
-              <option value="" disabled>Elige</option>
-              {horas.map((h) => <option key={h} value={h}>{h} h</option>)}
-            </select>
-            <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-[#5B6B7A]" />
+      <div className="relative mt-4">
+        <p id={`${id}-hl`} className="text-base font-semibold text-titulo">Hora de la cita</p>
+        <button ref={campo} id={`${id}-campo`} onClick={() => (abierto ? cerrar() : abrir())} aria-haspopup="dialog" aria-expanded={abierto}
+          aria-controls={abierto ? `${id}-panel` : undefined} aria-labelledby={`${id}-hl ${id}-campo`}
+          className={`mt-2 flex h-12 w-full items-center justify-between rounded-lg border bg-superficie px-4 text-left text-base transition-colors hover:border-borde-accion ${abierto ? 'border-2 border-borde-accion' : 'border-borde'}`}>
+          <span className={elegida ? 'font-semibold text-titulo' : 'text-secundario'}>{elegida ? `${elegida} h` : 'hh:mm'}</span>
+          <Icon n="reloj" className="text-icono" />
+        </button>
+        {abierto && (
+          <div ref={panel} id={`${id}-panel`} role="dialog" aria-label="Elige la hora de tu cita"
+            className="absolute inset-x-0 top-full z-20 mt-2 rounded-xl border border-borde bg-superficie p-3 shadow-[0_8px_24px_-4px_rgba(0,68,128,0.24)]">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="pb-1 text-center t-meta font-semibold text-secundario">Hora</p>
+                <div role="group" aria-label="Hora" onKeyDown={onKeyCol} className="flex max-h-60 flex-col gap-1 overflow-y-auto pr-1">
+                  {horas.map((h) => <button key={h} data-col="h" aria-pressed={hh === h} onClick={() => elegirHora(h)} className={opcion(hh === h)}>{h}</button>)}
+                </div>
+              </div>
+              <div>
+                <p className="pb-1 text-center t-meta font-semibold text-secundario">Minutos</p>
+                <div role="group" aria-label="Minutos" onKeyDown={onKeyCol} className="flex max-h-60 flex-col gap-1 overflow-y-auto pr-1">
+                  {hh
+                    ? libres(hh).map((m) => <button key={m} data-col="m" aria-pressed={elegida === `${hh}:${m}`} onClick={() => elegirMin(m)} className={opcion(elegida === `${hh}:${m}`)}>:{m}</button>)
+                    : <p className="px-2 py-3 text-center t-meta text-secundario">Primero elige la hora</p>}
+                </div>
+              </div>
+            </div>
+            <div className="mt-2 flex justify-end border-t border-borde pt-2">
+              <button onClick={() => cerrar()} className="inline-flex min-h-12 items-center rounded-md px-3 font-semibold text-enlace hover:bg-resaltado">Cancelar</button>
+            </div>
           </div>
-        </div>
-        <div>
-          <label htmlFor={`${id}-mm`} className="text-base font-semibold text-[#1F2933]">Minutos</label>
-          <div className="relative mt-2">
-            <select id={`${id}-mm`} value={mm} onChange={(e) => elegirMin(e.target.value)} disabled={!hh} className={`${select} disabled:cursor-not-allowed disabled:bg-[#ECF3F9] disabled:text-[#5B6B7A]`}>
-              <option value="" disabled>{hh ? 'Elige' : 'Primero la hora'}</option>
-              {hh && libres(hh).map((m) => <option key={m} value={m}>:{m}</option>)}
-            </select>
-            <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-[#5B6B7A]" />
-          </div>
-        </div>
+        )}
       </div>
       <div role="status" className="mt-4">
         {elegida
-          ? <p className="flex items-center gap-2 rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]"><Icon n="calendar" className="text-[#005BB0]" />Tu cita: <strong className="font-bold">{elegida} h</strong></p>
+          ? <p className="flex items-center gap-2 rounded-lg bg-resaltado px-4 py-3 t-body text-titulo"><Icon n="calendar" className="text-enlace" />Tu cita: <strong className="font-bold">{elegida} h</strong></p>
           : siguiente && (
-            <div className="flex flex-wrap items-center gap-x-3 t-body text-[#1F2933]">
+            <div className="flex flex-wrap items-center gap-x-3 t-body text-titulo">
               <span>Próximo horario libre: <strong className="font-bold">{siguiente} h</strong></span>
-              <button onClick={() => usar(siguiente)} className="inline-flex min-h-12 items-center rounded-md px-1 font-semibold text-[#005BB0] underline underline-offset-4 hover:text-[#003F7A]">Usar este horario</button>
+              <button onClick={() => onHora(siguiente)} className="inline-flex min-h-12 items-center rounded-md px-1 font-semibold text-enlace underline underline-offset-4 hover:text-enlace-hover">Usar este horario</button>
             </div>
           )}
       </div>

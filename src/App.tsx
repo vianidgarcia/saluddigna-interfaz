@@ -15,8 +15,9 @@ import { Entrar } from './views/Entrar'
 import { Asesor } from './views/Asesor'
 import { StaffHeader } from './components/StaffHeader'
 import { AvisoConexion, BotonInstalar } from './components/Pwa'
+import { BotonTema } from './components/Tema'
 import { loadSesion, saveSesion, type Rol, type Sesion } from './state/sesion'
-import { PASOS, STORAGE_KEY, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
+import { METODO, PASOS, STORAGE_KEY, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
 
 const VIEW_KEY = 'sd_vista'
 const COOKIES_KEY = 'sd_cookies'
@@ -38,11 +39,8 @@ export default function App() {
   const [tramite, setTramite] = useState<Tramite | null>(loadTramite)
   const tRef = useRef(tramite)
   const [sesion, setSesion] = useState<Sesion | null>(loadSesion)
-  const sesionRef = useRef(sesion)
-  // visitante: pantalla Entrar abierta (con el rol elegido en la esquina superior derecha)
+  // pantalla Entrar (solo personal: asesor o administrador), abierta desde la esquina superior derecha
   const [entrar, setEntrar] = useState<{ rol: Rol; motivo?: string } | null>(null)
-  // acción que el visitante intentó antes de iniciar sesión; se completa al entrar como paciente
-  const pendiente = useRef<(() => void) | null>(null)
 
   // Otra pestaña (p. ej. el Asesor) cambió el trámite: se refleja aquí sin recargar.
   // La sesión NO se sincroniza: cada pestaña conserva su propio rol.
@@ -67,19 +65,8 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const timer = useRef<number | undefined>(undefined)
 
-  const abrirEntrar = (rol: Rol = 'paciente', motivo?: string) => { setEntrar({ rol, motivo }); window.scrollTo(0, 0) }
-  const PRIVADAS: Partial<Record<View, string>> = {
-    tramites: 'Inicia sesión para ver tus trámites.',
-    resultados: 'Inicia sesión para consultar tus resultados.',
-    agendar: 'Inicia sesión para agendar tu cita.',
-    pay: 'Inicia sesión para ver tu pago.',
-  }
+  const abrirEntrar = (rol: Rol = 'asesor', motivo?: string) => { setEntrar({ rol, motivo }); window.scrollTo(0, 0) }
   const go = (v: View) => {
-    if (!sesionRef.current && PRIVADAS[v]) {
-      pendiente.current = () => go(v)
-      abrirEntrar('paciente', PRIVADAS[v])
-      return
-    }
     setView(v)
     try { window.sessionStorage.setItem(VIEW_KEY, v) } catch { /* sin almacenamiento */ }
     window.scrollTo(0, 0)
@@ -99,14 +86,8 @@ export default function App() {
   const update = (fn: (t: Tramite) => Tramite) => { if (tRef.current) commit(fn(tRef.current)) }
 
   const startAgendar = (estudio?: EstudioElegido) => {
-    const s = sesionRef.current
-    if (!s) {
-      pendiente.current = () => startAgendar(estudio)
-      abrirEntrar('paciente', estudio ? `Inicia sesión para agendar ${estudio.nombre}.` : 'Inicia sesión para agendar tu cita.')
-      return
-    }
     let t = tRef.current
-    if (!t || t.estado === 'confirmada') t = nuevoTramite('web', { nombre: s.nombre, cuenta: s.correo })
+    if (!t || t.estado === 'confirmada') t = nuevoTramite('web')
     if (estudio) {
       // estudio preseleccionado: al continuar se salta al primer dato que falte
       t = { ...t, estudio, paso: 1, estado: 'en_curso', metodoPago: t.estado === 'pago_pendiente' ? null : t.metodoPago, desdeResumen: true }
@@ -118,11 +99,10 @@ export default function App() {
   }
 
   const continuar = () => {
-    if (!sesionRef.current) { pendiente.current = () => continuar(); abrirEntrar('paciente', 'Inicia sesión para continuar tu trámite.'); return }
     const t = tRef.current
     if (!t) return startAgendar()
     if (t.estado === 'confirmada') return go('tramites')
-    const destino = t.estado === 'pago_pendiente' ? 'el pago en Oxxo' : `el paso ${t.paso}: ${PASOS[t.paso]}`
+    const destino = t.estado === 'pago_pendiente' ? `el pago (${METODO[t.metodoPago ?? 'oxxo'].toLowerCase()})` : `el paso ${t.paso}: ${PASOS[t.paso]}`
     commit(conEvento(t, 'tramite.retomado', `Retomó en ${destino}`))
     go(t.estado === 'pago_pendiente' ? 'pay' : 'agendar')
   }
@@ -142,14 +122,11 @@ export default function App() {
   }
 
   const entrarComo = (s: Sesion) => {
-    saveSesion(s); sesionRef.current = s; setSesion(s); setEntrar(null)
+    saveSesion(s); setSesion(s); setEntrar(null)
     setView('home'); window.scrollTo(0, 0)
-    const accion = pendiente.current
-    pendiente.current = null
-    if (s.rol === 'paciente' && accion) accion()
   }
   const salir = () => {
-    saveSesion(null); sesionRef.current = null; setSesion(null); setEntrar(null); pendiente.current = null
+    saveSesion(null); setSesion(null); setEntrar(null)
     setView('home')
     try { window.sessionStorage.setItem(VIEW_KEY, 'home') } catch { /* sin almacenamiento */ }
     window.scrollTo(0, 0)
@@ -176,29 +153,29 @@ export default function App() {
 
   if (!sesion && entrar) {
     return <Entrar key={entrar.rol + (entrar.motivo ?? '')} rolInicial={entrar.rol} motivo={entrar.motivo} onEntrar={entrarComo}
-      onVolver={() => { pendiente.current = null; setEntrar(null); window.scrollTo(0, 0) }} />
+      onVolver={() => { setEntrar(null); window.scrollTo(0, 0) }} />
   }
 
-  if (sesion && sesion.rol !== 'paciente') {
+  if (sesion) {
     return (
       <Ctx.Provider value={ctx}>
-        <div className="flex min-h-screen flex-col bg-white">
-          <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:font-semibold focus:text-[#005BB0] focus:shadow-lg">Saltar al contenido</a>
+        <div className="flex min-h-screen flex-col bg-superficie">
+          <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-superficie focus:px-4 focus:py-3 focus:font-semibold focus:text-enlace focus:shadow-lg">Saltar al contenido</a>
           <StaffHeader />
           <AvisoConexion />
           <main id="contenido" tabIndex={-1} className="flex-1 focus:outline-none"><Asesor /></main>
-          <footer className="border-t border-[#D6E4F5] py-2"><div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-x-6 px-4 t-meta text-[#5B6B7A] lg:px-8"><p className="py-3">Prototipo · todos los datos son de demostración.</p><BotonInstalar /></div></footer>
+          <footer className="border-t border-borde py-2"><div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-x-6 px-4 t-meta text-secundario lg:px-8"><p className="py-3">Prototipo · todos los datos son de demostración.</p><span className="sm:hidden"><BotonTema /></span><BotonInstalar /></div></footer>
           {toastEl}
         </div>
       </Ctx.Provider>
     )
   }
 
-  const activeView: View = !sesion && PRIVADAS[view] ? 'home' : (view === 'agendar' && !tramite) ? 'home' : view
+  const activeView: View = (view === 'agendar' && !tramite) ? 'home' : view
   return (
     <Ctx.Provider value={ctx}>
       <div className="flex min-h-screen flex-col pb-16 lg:pb-0">
-        <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:font-semibold focus:text-[#005BB0] focus:shadow-lg">Saltar al contenido</a>
+        <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-superficie focus:px-4 focus:py-3 focus:font-semibold focus:text-enlace focus:shadow-lg">Saltar al contenido</a>
         <Header clinic={clinic} onChange={() => setSheet(true)} onHome={() => go('home')} />
         <AvisoConexion />
         {cookies && <Cookies onDone={cerrarCookies} />}

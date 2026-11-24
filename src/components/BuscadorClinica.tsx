@@ -49,7 +49,7 @@ export function useBuscadorClinica() {
 }
 export type Buscador = ReturnType<typeof useBuscadorClinica>
 
-const select = 'h-12 w-full appearance-none rounded-lg border border-[#D6E4F5] bg-white pl-4 pr-10 text-base text-[#1F2933] transition-colors hover:border-[#0074D9]'
+const select = 'h-12 w-full appearance-none rounded-lg border border-borde bg-superficie pl-4 pr-10 text-base text-titulo transition-colors hover:border-borde-accion'
 
 export function FiltrosClinica({ b, id, inputRef }: { b: Buscador; id: string; inputRef?: RefObject<HTMLInputElement | null> }) {
   const ciudades = ciudadesDe(b.estado)
@@ -57,41 +57,41 @@ export function FiltrosClinica({ b, id, inputRef }: { b: Buscador; id: string; i
     <div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor={`${id}-estado`} className="text-base font-semibold text-[#1F2933]">Estado</label>
+          <label htmlFor={`${id}-estado`} className="text-base font-semibold text-titulo">Estado</label>
           <div className="relative mt-2">
             <select id={`${id}-estado`} value={b.estado} onChange={(e) => b.setEstado(e.target.value)} className={select}>
               <option value="">Todos los estados</option>
               {ESTADOS.map((e) => <option key={e} value={e}>{e}</option>)}
             </select>
-            <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-[#5B6B7A]" />
+            <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-secundario" />
           </div>
         </div>
         <div>
-          <label htmlFor={`${id}-ciudad`} className="text-base font-semibold text-[#1F2933]">Ciudad</label>
+          <label htmlFor={`${id}-ciudad`} className="text-base font-semibold text-titulo">Ciudad</label>
           <div className="relative mt-2">
             <select id={`${id}-ciudad`} value={b.ciudad} onChange={(e) => b.setCiudad(e.target.value)} className={select}>
               <option value="">{b.estado ? `Todas las ciudades de ${b.estado}` : 'Todas las ciudades'}</option>
               {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-[#5B6B7A]" />
+            <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-secundario" />
           </div>
         </div>
       </div>
-      <label htmlFor={`${id}-q`} className="mt-3 block text-base font-semibold text-[#1F2933]">Sucursal</label>
+      <label htmlFor={`${id}-q`} className="mt-3 block text-base font-semibold text-titulo">Sucursal</label>
       <div className="relative mt-2">
-        <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#5B6B7A]" />
+        <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secundario" />
         <input ref={inputRef} id={`${id}-q`} value={b.q} onChange={(e) => b.setQ(e.target.value)} placeholder="Nombre de la sucursal, colonia o calle"
-          className="h-12 w-full rounded-lg border border-[#D6E4F5] bg-white pl-12 pr-3 text-base text-[#1F2933] transition-colors hover:border-[#0074D9]" />
+          className="h-12 w-full rounded-lg border border-borde bg-superficie pl-12 pr-3 text-base text-titulo transition-colors hover:border-borde-accion" />
       </div>
       <button onClick={b.usarUbicacion} disabled={b.buscando} className={`${outlineBtn} mt-3 w-full sm:w-auto disabled:cursor-wait`}>
         <Icon n="target" />{b.buscando ? 'Buscando tu ubicación…' : 'Usar mi ubicación'}
       </button>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4">
-        <p role="status" className="t-meta text-[#5B6B7A]">
+        <p role="status" className="t-meta text-secundario">
           {!b.activo ? `${b.total} clínicas en ${ESTADOS.length} estados. Elige estado y ciudad, busca una sucursal o usa tu ubicación.`
             : `${b.total === 1 ? '1 clínica encontrada' : `${b.total} clínicas encontradas`}${b.ubicacion ? (b.ubicacion.fuente === 'real' ? ', de la más cercana a la más lejana' : ` cerca de ${UBICACION_DEMO.nombre} (ubicación de ejemplo: el navegador no compartió la tuya)`) : ''}`}
         </p>
-        {b.activo && <button onClick={b.limpiar} className="inline-flex min-h-12 items-center rounded-md px-1 t-meta font-semibold text-[#005BB0] underline underline-offset-4 hover:text-[#003F7A]">Limpiar filtros</button>}
+        {b.activo && <button onClick={b.limpiar} className="inline-flex min-h-12 items-center rounded-md px-1 t-meta font-semibold text-enlace underline underline-offset-4 hover:text-enlace-hover">Limpiar filtros</button>}
       </div>
     </div>
   )

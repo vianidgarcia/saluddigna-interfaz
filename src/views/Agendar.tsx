@@ -19,8 +19,8 @@ const PREGUNTA: Record<Paso, string> = {
   3: '¿Qué día y a qué hora?',
   4: 'Revisa tu cita y elige cómo pagar',
 }
-const optionRow = 'flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition-colors has-[:checked]:border-[#005BB0] has-[:checked]:bg-[#EBF4FC]'
-const radio = 'mt-0.5 size-5 shrink-0 accent-[#005BB0]'
+const optionRow = 'flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition-colors has-[:checked]:border-enlace has-[:checked]:bg-resaltado'
+const radio = 'mt-0.5 size-5 shrink-0 accent-accion-hover'
 
 export function Agendar() {
   const { tramite } = useApp()
@@ -71,40 +71,51 @@ function Flujo({ t }: { t: Tramite }) {
   if (paso === 4) {
     falta = !t.clinica ? 'Elige una clínica para confirmar tu cita (toca “Cambiar” en Clínica).'
       : !t.fecha || !t.hora || yaPaso(t.fecha, t.hora) ? 'La fecha u hora de tu cita ya pasó: toca “Cambiar” en Fecha y hora.'
-        : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
+        : !t.paciente.nombre?.trim() ? 'Escribe a nombre de quién es la cita para continuar.'
+          : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
   }
 
+  // pago en clínica: se confirma al momento; los demás pasan por la pasarela simulada (vista Pago)
+  const INICIO_PAGO: Partial<Record<MetodoPago, [string, string]>> = {
+    en_linea: ['pago.iniciado', 'Inició el pago con tarjeta en la pasarela (simulada)'],
+    oxxo: ['pago.referencia_generada', 'Referencia de pago en Oxxo generada (demo)'],
+    spei: ['pago.datos_transferencia', 'Datos de transferencia SPEI generados (demo)'],
+  }
   const confirmar = () => {
-    if (t.metodoPago === 'oxxo') {
-      update((x) => conEvento({ ...x, estado: 'pago_pendiente', desdeResumen: false }, 'pago.referencia_generada', 'Referencia de pago en Oxxo generada (demo)'))
+    const inicio = t.metodoPago && INICIO_PAGO[t.metodoPago]
+    if (inicio) {
+      update((x) => conEvento({ ...x, estado: 'pago_pendiente', desdeResumen: false, pago: { estado: 'pendiente', intentos: 0 } }, inicio[0], inicio[1], 'pasarela'))
       go('pay')
       return
     }
     update((x) => conEvento({ ...x, estado: 'confirmada', desdeResumen: false }, 'cita.confirmada', `${METODO[x.metodoPago!]} · ${x.fecha ? fechaLarga(x.fecha) : ''} ${x.hora ?? ''}`))
     window.scrollTo(0, 0)
   }
+  const PRIMARIO: Record<MetodoPago, string> = {
+    en_linea: 'Continuar al pago con tarjeta', oxxo: 'Generar referencia de pago', spei: 'Generar datos de transferencia', en_clinica: 'Confirmar cita',
+  }
   const primario = paso === TOTAL_PASOS
-    ? (t.metodoPago === 'oxxo' ? 'Generar referencia de pago' : 'Confirmar cita')
+    ? (t.metodoPago ? PRIMARIO[t.metodoPago] : 'Confirmar cita')
     : t.desdeResumen ? 'Guardar y continuar' : 'Continuar'
 
   return (
     <div className={`${container} py-4 lg:py-12`}>
       <Back />
-      <h1 className="mt-2 t-section font-head text-[#1F2933] lg:mt-4">Agendar cita</h1>
+      <h1 className="mt-2 t-section font-head text-titulo lg:mt-4">Agendar cita</h1>
       <Progreso paso={paso} />
       <div className="mt-6 max-w-3xl lg:mt-8">
-        <h2 ref={headRef} tabIndex={-1} data-focus-target className="t-card font-head text-[#1F2933]">
+        <h2 ref={headRef} tabIndex={-1} data-focus-target className="t-card font-head text-titulo">
           <span className="sr-only">Paso {paso} de {TOTAL_PASOS}: </span>{PREGUNTA[paso]}
         </h2>
-        {paso === 1 && <p className="mt-1 t-meta text-[#5B6B7A]">Guardamos tu avance en cada paso. Si te interrumpes, retómalo desde el inicio o por WhatsApp.</p>}
+        {paso === 1 && <p className="mt-1 t-meta text-secundario">Guardamos tu avance en cada paso. Si te interrumpes, retómalo desde el inicio o por WhatsApp.</p>}
         <div className="mt-6">
           {paso === 1 && <PasoEstudio t={t} />}
           {paso === 2 && <PasoClinica t={t} />}
           {paso === 3 && <PasoFecha t={t} />}
           {paso === 4 && <PasoPago t={t} onCambiar={cambiar} />}
         </div>
-        <div className="mt-8 border-t border-[#D6E4F5] pt-6">
-            {falta && <p id="falta" className="mb-3 t-body text-[#43474A]">{falta}</p>}
+        <div className="mt-8 border-t border-borde pt-6">
+            {falta && <p id="falta" className="mb-3 t-body text-cuerpo">{falta}</p>}
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               {paso > 1
                 ? <button onClick={atras} className={outlineBtn}><Icon n="left" />Atrás</button>
@@ -122,13 +133,13 @@ function Flujo({ t }: { t: Tramite }) {
 function Progreso({ paso }: { paso: Paso }) {
   return (
     <div className="mt-3 max-w-3xl lg:mt-4">
-      <p className="t-sub font-semibold text-[#1F2933]">Paso {paso} de {TOTAL_PASOS} · {PASOS[paso]}</p>
-      <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}: ${PASOS[paso]}`} aria-label="Avance del agendado" className="mt-2 h-2 rounded-full bg-[#EBF4FC]">
-        <div className="h-full rounded-full bg-[#005BB0] transition-[width]" style={{ width: `${avance(paso)}%` }} />
+      <p className="t-sub font-semibold text-titulo">Paso {paso} de {TOTAL_PASOS} · {PASOS[paso]}</p>
+      <div role="progressbar" aria-valuemin={0} aria-valuemax={TOTAL_PASOS} aria-valuenow={paso} aria-valuetext={`Paso ${paso} de ${TOTAL_PASOS}: ${PASOS[paso]}`} aria-label="Avance del agendado" className="mt-2 h-2 rounded-full bg-resaltado">
+        <div className="h-full rounded-full bg-accion-hover transition-[width]" style={{ width: `${avance(paso)}%` }} />
       </div>
       <ol className="mt-2 hidden grid-cols-4 gap-2 t-meta sm:grid" aria-hidden="true">
         {LISTA_PASOS.map((p) => (
-          <li key={p} className={p === paso ? 'font-semibold text-[#005BB0]' : p < paso ? 'text-[#43474A]' : 'text-[#5B6B7A]'}>{p}. {PASOS[p]}</li>
+          <li key={p} className={p === paso ? 'font-semibold text-enlace' : p < paso ? 'text-cuerpo' : 'text-secundario'}>{p}. {PASOS[p]}</li>
         ))}
       </ol>
     </div>
@@ -144,23 +155,23 @@ function PasoEstudio({ t }: { t: Tramite }) {
   return (
     <>
       {paquete && (
-        <p className="mb-6 rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]" role="status">
+        <p className="mb-6 rounded-lg bg-resaltado px-4 py-3 t-body text-titulo" role="status">
           Elegiste: <strong className="font-bold">{paquete.nombre}{paquete.precio ? ` – ${paquete.precio}` : ''}</strong>{paquete.precio ? ' (IVA incluido)' : ''}. Puedes continuar o elegir otro estudio.
         </p>
       )}
-      <p className="text-base font-semibold text-[#1F2933]" id="cat-l">Categoría</p>
+      <p className="text-base font-semibold text-titulo" id="cat-l">Categoría</p>
       <div className="mt-2 flex flex-wrap gap-2" role="group" aria-labelledby="cat-l">
         {CHIPS.map((c) => <button key={c} onClick={() => setCat(c)} aria-pressed={cat === c} className={chip(cat === c)}>{c}</button>)}
       </div>
       {cat && (
         <fieldset className="mt-6">
-          <legend className="text-base font-semibold text-[#1F2933]">Estudios de {cat.toLowerCase()}</legend>
+          <legend className="text-base font-semibold text-titulo">Estudios de {cat.toLowerCase()}</legend>
           <div className="mt-2 flex flex-col gap-2">
             {STUDIES[cat].map((n) => (
-              <label key={n} className={`${optionRow} border-[#D6E4F5] hover:border-[#0074D9]`}>
+              <label key={n} className={`${optionRow} border-borde hover:border-borde-accion`}>
                 <input type="radio" name="estudio" className={radio} checked={t.estudio?.nombre === n}
                   onChange={() => update((x) => ({ ...x, estudio: { categoria: cat, nombre: n } }))} />
-                <span><span className="block text-base font-semibold text-[#1F2933]">{n}</span><span className="block t-meta text-[#5B6B7A]">Precio según tu clínica</span></span>
+                <span><span className="block text-base font-semibold text-titulo">{n}</span><span className="block t-meta text-secundario">Precio según tu clínica</span></span>
               </label>
             ))}
           </div>
@@ -186,29 +197,29 @@ function PasoClinica({ t }: { t: Tramite }) {
           onElegir={(c) => update((x) => ({ ...x, clinica: c.name, clinicaPendiente: false }))} />
       </div>
       <fieldset className="mt-6">
-        <legend className="text-base font-semibold text-[#1F2933]">Elige una clínica</legend>
+        <legend className="text-base font-semibold text-titulo">Elige una clínica</legend>
         <div className="mt-2 flex flex-col gap-2">
           {filas.map(({ c, km }) => (
-            <label key={c.name} className={`${optionRow} border-[#D6E4F5] hover:border-[#0074D9]`}>
+            <label key={c.name} className={`${optionRow} border-borde hover:border-borde-accion`}>
               <input type="radio" name="clinica" className={radio} checked={t.clinica === c.name}
                 onChange={() => update((x) => ({ ...x, clinica: c.name, clinicaPendiente: false }))} />
               <span className="min-w-0">
-                <span className="block text-base font-semibold text-[#1F2933]">{c.name}</span>
-                {c.name === masCercana && <span className="block t-meta font-semibold text-[#005BB0]">Más cercana</span>}
-                <span className="block t-meta text-[#5B6B7A]">{c.ciudad}, {c.estado}{km !== undefined && <> · {fmtKm(km)}</>}</span>
-                <span className="block t-meta text-[#43474A]">{c.address}</span>
-                {(c.phone || c.horario) && <span className="block t-meta text-[#5B6B7A]">{c.phone && <>Tel.{NB}{c.phone}</>}{c.phone && c.horario && ' · '}{c.horario}</span>}
+                <span className="block text-base font-semibold text-titulo">{c.name}</span>
+                {c.name === masCercana && <span className="block t-meta font-semibold text-enlace">Más cercana</span>}
+                <span className="block t-meta text-secundario">{c.ciudad}, {c.estado}{km !== undefined && <> · {fmtKm(km)}</>}</span>
+                <span className="block t-meta text-cuerpo">{c.address}</span>
+                {(c.phone || c.horario) && <span className="block t-meta text-secundario">{c.phone && <>Tel.{NB}{c.phone}</>}{c.phone && c.horario && ' · '}{c.horario}</span>}
               </span>
             </label>
           ))}
-          {b.activo && !b.total && <p className="rounded-lg bg-[#EBF4FC] px-4 py-3 t-body text-[#1F2933]">No encontramos clínicas con esos filtros. Prueba con otra ciudad o toca “Limpiar filtros”.</p>}
+          {b.activo && !b.total && <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">No encontramos clínicas con esos filtros. Prueba con otra ciudad o toca “Limpiar filtros”.</p>}
           <MasClinicas b={b} />
-          <label className={`${optionRow} border-dashed border-[#D6E4F5] hover:border-[#0074D9]`}>
+          <label className={`${optionRow} border-dashed border-borde hover:border-borde-accion`}>
             <input type="radio" name="clinica" className={radio} checked={t.clinicaPendiente}
               onChange={() => update((x) => ({ ...x, clinica: null, clinicaPendiente: true }))} />
             <span>
-              <span className="block text-base font-semibold text-[#1F2933]">Aún no lo decido</span>
-              <span className="block t-meta text-[#5B6B7A]">Puedes seguir y elegirla antes de confirmar tu cita.</span>
+              <span className="block text-base font-semibold text-titulo">Aún no lo decido</span>
+              <span className="block t-meta text-secundario">Puedes seguir y elegirla antes de confirmar tu cita.</span>
             </span>
           </label>
         </div>
@@ -226,28 +237,29 @@ function PasoFecha({ t }: { t: Tramite }) {
 }
 
 /* ---------- paso 4: resumen editable + pago ---------- */
-const OPCIONES: [MetodoPago, string][] = [
-  ['en_linea', 'Con tarjeta de débito o crédito. En esta demo el cobro es simulado.'],
-  ['oxxo', 'Te damos una referencia para pagar en efectivo en cualquier Oxxo.'],
-  ['en_clinica', 'Pagas en recepción el día de tu cita.'],
+const OPCIONES: [MetodoPago, string, string][] = [
+  ['en_linea', 'tarjeta', 'Visa, Mastercard o American Express. Pasarela simulada: no se hace ningún cobro.'],
+  ['oxxo', 'tienda', 'Te damos una referencia para pagar en efectivo en cualquier Oxxo.'],
+  ['spei', 'banco', 'Te damos una CLABE y una referencia para transferir desde tu banco.'],
+  ['en_clinica', 'pin', 'Pagas en recepción el día de tu cita.'],
 ]
 
 function Resumen({ t, onCambiar }: { t: Tramite; onCambiar?: (p: Paso) => void }) {
   const c = findClinic(t.clinica)
   const filas: [Paso, string, ReactNode][] = [
-    [1, 'Estudio', <>{t.estudio?.nombre}<span className="block t-meta font-normal text-[#5B6B7A]">{t.estudio?.precio ? `${t.estudio.precio} IVA incluido` : 'Precio según tu clínica'}</span></>],
+    [1, 'Estudio', <>{t.estudio?.nombre}<span className="block t-meta font-normal text-secundario">{t.estudio?.precio ? `${t.estudio.precio} IVA incluido` : 'Precio según tu clínica'}</span></>],
     [2, 'Clínica', c
-      ? <>{c.name}<span className="block t-meta font-normal text-[#5B6B7A]">{c.address} · Tel.{NB}{c.phone}</span></>
-      : <span className="inline-flex items-center gap-2 rounded-full bg-[#FDF1DB] px-3 py-1 t-meta font-semibold text-[#7A4E00]"><span aria-hidden="true" className="size-2 rounded-full bg-[#F2A00D]" />Clínica pendiente</span>],
-    [3, 'Fecha y hora', t.fecha ? <span className="first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}<span className="block t-meta font-normal text-[#5B6B7A]">Horario de demostración</span></span> : '—'],
+      ? <>{c.name}<span className="block t-meta font-normal text-secundario">{c.address} · Tel.{NB}{c.phone}</span></>
+      : <span className="inline-flex items-center gap-2 rounded-full bg-ambar-fondo px-3 py-1 t-meta font-semibold text-ambar-texto"><span aria-hidden="true" className="size-2 rounded-full bg-ambar" />Clínica pendiente</span>],
+    [3, 'Fecha y hora', t.fecha ? <span className="first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}<span className="block t-meta font-normal text-secundario">Horario de demostración</span></span> : '—'],
   ]
   return (
-    <dl className="divide-y divide-[#D6E4F5]">
+    <dl className="divide-y divide-borde">
       {filas.map(([p, k, v]) => (
         <div key={k} className="flex items-start justify-between gap-4 py-3 first:pt-0">
           <div>
-            <dt className="t-meta text-[#5B6B7A]">{k}</dt>
-            <dd className="t-body font-semibold text-[#1F2933]">{v}</dd>
+            <dt className="t-meta text-secundario">{k}</dt>
+            <dd className="t-body font-semibold text-titulo">{v}</dd>
           </div>
           {onCambiar && <button onClick={() => onCambiar(p)} aria-label={`Cambiar ${k.toLowerCase()}`} className={`${link} shrink-0`}>Cambiar</button>}
         </div>
@@ -260,18 +272,26 @@ function PasoPago({ t, onCambiar }: { t: Tramite; onCambiar: (p: Paso) => void }
   const { update } = useApp()
   return (
     <>
-      <section aria-labelledby="res-t" className="rounded-2xl border border-[#D6E4F5] bg-white p-6">
-        <h3 id="res-t" className="t-sub font-bold text-[#1F2933]">Resumen de tu cita</h3>
+      <div className="mb-8">
+        <label htmlFor="nombre-paciente" className="text-base font-semibold text-titulo">¿A nombre de quién es la cita?</label>
+        <p id="nombre-h" className="t-meta text-secundario">No necesitas cuenta. Con este nombre y tu folio te atendemos en la clínica, por WhatsApp o en el Call Center.</p>
+        <input id="nombre-paciente" autoComplete="name" value={t.paciente.nombre ?? ''} aria-describedby="nombre-h"
+          onChange={(e) => update((x) => ({ ...x, paciente: { ...x.paciente, nombre: e.target.value } }))}
+          placeholder="Nombre y apellidos" className="mt-2 h-12 w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion sm:max-w-md" />
+      </div>
+      <section aria-labelledby="res-t" className="rounded-2xl border border-borde bg-superficie p-6">
+        <h3 id="res-t" className="t-sub font-bold text-titulo">Resumen de tu cita</h3>
         <div className="mt-4"><Resumen t={t} onCambiar={onCambiar} /></div>
       </section>
       <fieldset className="mt-8">
-        <legend className="text-base font-semibold text-[#1F2933]">¿Cómo quieres pagar?</legend>
+        <legend className="text-base font-semibold text-titulo">¿Cómo quieres pagar?</legend>
         <div className="mt-2 flex flex-col gap-2">
-          {OPCIONES.map(([m, d]) => (
-            <label key={m} className={`${optionRow} border-[#D6E4F5] hover:border-[#0074D9]`}>
+          {OPCIONES.map(([m, ic, d]) => (
+            <label key={m} className={`${optionRow} border-borde hover:border-borde-accion`}>
               <input type="radio" name="pago" className={radio} checked={t.metodoPago === m}
                 onChange={() => update((x) => ({ ...x, metodoPago: m }))} />
-              <span><span className="block text-base font-semibold text-[#1F2933]">{METODO[m]}</span><span className="block t-meta text-[#5B6B7A]">{d}</span></span>
+              <Icon n={ic} className="mt-0.5 text-icono" />
+              <span><span className="block text-base font-semibold text-titulo">{METODO[m]}</span><span className="block t-meta text-secundario">{d}</span></span>
             </label>
           ))}
         </div>
@@ -289,18 +309,23 @@ function Confirmada({ t }: { t: Tramite }) {
     <div className={`${container} py-8 lg:py-12`}>
       <Back />
       <div className="mt-4 max-w-3xl">
-        <h1 ref={ref} tabIndex={-1} data-focus-target className="flex items-center gap-3 t-greeting font-head text-[#006D3D]">
+        <h1 ref={ref} tabIndex={-1} data-focus-target className="flex items-center gap-3 t-greeting font-head text-verde">
           <Icon n="check" size={36} />Cita confirmada
         </h1>
-        <p role="status" className="mt-2 t-body text-[#1F2933]">
-          Guardamos los detalles en Mis trámites. {t.metodoPago === 'en_clinica' ? 'Pagas en recepción el día de tu cita.' : 'Pago en línea simulado: no se hizo ningún cobro.'}
+        <p role="status" className="mt-2 t-body text-titulo">
+          {t.paciente.nombre ? `${t.paciente.nombre}, guardamos` : 'Guardamos'} los detalles en Mis trámites con tu folio {t.id}.{' '}
+          {t.metodoPago === 'en_clinica' ? 'Pagas en recepción el día de tu cita.' : t.pago?.estado === 'aprobado' ? 'Tu pago quedó registrado (simulación: no se hizo ningún cobro).' : ''}
         </p>
-        <section aria-labelledby="conf-t" className="mt-6 rounded-2xl border border-[#D6E4F5] bg-white p-6">
-          <h2 id="conf-t" className="t-sub font-bold text-[#1F2933]">Detalles de tu cita</h2>
+        <section aria-labelledby="conf-t" className="mt-6 rounded-2xl border border-borde bg-superficie p-6">
+          <h2 id="conf-t" className="t-sub font-bold text-titulo">Detalles de tu cita</h2>
           <div className="mt-4"><Resumen t={t} /></div>
-          <dl className="mt-3 grid gap-3 border-t border-[#D6E4F5] pt-3 sm:grid-cols-2">
-            <div><dt className="t-meta text-[#5B6B7A]">Pago</dt><dd className="t-body font-semibold text-[#1F2933]">{t.metodoPago ? METODO[t.metodoPago] : '—'}</dd></div>
-            <div><dt className="t-meta text-[#5B6B7A]">Folio</dt><dd className="t-body font-semibold text-[#1F2933]">{t.id} <span className="t-meta font-normal text-[#5B6B7A]">(folio de ejemplo)</span></dd></div>
+          <dl className="mt-3 grid gap-3 border-t border-borde pt-3 sm:grid-cols-2">
+            <div><dt className="t-meta text-secundario">Pago</dt><dd className="t-body font-semibold text-titulo">{t.metodoPago ? METODO[t.metodoPago] : '—'}
+              {t.pago?.estado === 'aprobado' && <span className="block t-meta font-normal text-secundario">
+                Aprobado{t.pago.tarjeta && ` · ${t.pago.tarjeta.marca} •••• ${t.pago.tarjeta.ultimos4}`}{t.pago.autorizacion && ` · Autorización ${t.pago.autorizacion} (de ejemplo)`}
+              </span>}</dd></div>
+            {t.paciente.nombre && <div><dt className="t-meta text-secundario">A nombre de</dt><dd className="t-body font-semibold text-titulo">{t.paciente.nombre}</dd></div>}
+            <div><dt className="t-meta text-secundario">Folio</dt><dd className="t-body font-semibold text-titulo">{t.id} <span className="t-meta font-normal text-secundario">(folio de ejemplo)</span></dd></div>
           </dl>
         </section>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
