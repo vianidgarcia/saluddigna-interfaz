@@ -17,7 +17,13 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - Agendado en 4 pasos (`TOTAL_PASOS`): Estudio, Clínica, Fecha y hora, Pago. El paciente se identifica por su cuenta
   del portal; por ahora NO se usa el número de teléfono como identificador.
 - Fecha y hora: `SelectorHorario` (calendario + hora/minutos). Nunca permite fechas u horas pasadas (`yaPaso`).
-- `src/components/`: piezas de interfaz (Header, StaffHeader, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, SelectorHorario, Icon, ui).
+  Solo muestra días y horas disponibles (los ocupados o pasados no se dibujan).
+- Clínicas: `data/clinicasData.ts` (GENERADO: 261 sucursales reales de las páginas públicas de salud-digna.org, con
+  estado, ciudad, dirección, teléfono, coordenadas y horario; no editar a mano ni inventar clínicas) y
+  `data/clinics.ts` (búsqueda y distancias). `components/BuscadorClinica`: estado, ciudad, sucursal y
+  "Usar mi ubicación" (geolocalización real; si no se comparte, ubicación de ejemplo en Culiacán), de 20 en 20.
+  Lo usan el paso 2 del agendado y `ClinicSheet` (también el asesor).
+- `src/components/`: piezas de interfaz (Header, StaffHeader, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, BuscadorClinica, SelectorHorario, Pwa, Icon, ui).
 - `src/views/`: Entrar, Home, Agendar, Pay, Tramites, Resultados, Asesor (también la usa Administrador).
 - `src/data/`: clinics, studies, packages.
 - `src/state/tramite.ts`: tipo `Tramite`, persistencia en localStorage (`sd_tramite_activo`) y línea de tiempo de eventos.
@@ -54,8 +60,8 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - Cookies en el flujo de la página (nunca fijas ni modales).
 
 ## Datos reales (no inventar otros)
-- Clínicas de Culiacán: Culiacán (Ruperto L. Paliza #87, Col. Centro, (667) 712 60 83), Cañadas,
-  Colegio Militar, Universitarios, La Conquista, Las Torres, Nakayama (ya están en CLINICS).
+- Clínicas: directorio completo en `data/clinicasData.ts` (261 sucursales, 32 estados). La clínica inicial del
+  portal es Culiacán (Ruperto L. Paliza #87, Col. Centro, (667) 712 60 83).
 - WhatsApp +52 55 3956 6729 (asistente 24/7, asesores 7:00–21:00). Call Center 55 5554 7166.
 - Paquetes reales: Integral mujer $630, Mastografía + densitometría $300, Mastografía + electro $320.
 - Precios de estudios individuales: NO inventar; mostrar "Precio según tu clínica".

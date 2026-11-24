@@ -47,17 +47,17 @@ function Hero() {
 
 /* ---------- lower sections ---------- */
 function ClinicRow({ clinic }: { clinic: Clinic }) {
-  const { toast, openClinics } = useApp()
+  const { openClinics } = useApp()
   return (
-    <section aria-label="Tu clínica más cercana" className={`${container} pt-10 lg:pt-16`}>
+    <section aria-label="Tu clínica" className={`${container} pt-10 lg:pt-16`}>
       <div className="flex flex-col gap-2 border-t border-[#D6E4F5] pt-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
         <p className="flex items-start gap-3 t-body text-[#43474A]">
           <Icon n="pin" className="mt-0.5 text-[#0074D9]" />
-          <span>Tu clínica más cercana: <strong className="font-bold text-[#1F2933]">{clinic.name}</strong> · {clinic.km.toFixed(1)}{NB}km</span>
+          <span>Tu clínica: <strong className="font-bold text-[#1F2933]">{clinic.name}</strong> · {clinic.ciudad}, {clinic.estado}</span>
         </p>
         <div className="flex flex-wrap gap-x-6">
-          <a href={tel(clinic.phone)} className={link}><Icon n="phone" />Llamar{NB}{clinic.phone.replace(/ /g, NB)}</a>
-          <button onClick={() => toast()} className={link}><Icon n="nav" />Cómo llegar</button>
+          {clinic.phone && <a href={tel(clinic.phone)} className={link}><Icon n="phone" />Llamar{NB}{clinic.phone.replace(/ /g, NB)}</a>}
+          <a href={`https://www.google.com/maps/dir/?api=1&destination=${clinic.lat},${clinic.lng}`} target="_blank" rel="noopener" className={link}><Icon n="nav" />Cómo llegar</a>
           <button onClick={openClinics} className={link}>Ver todas las clínicas</button>
         </div>
       </div>

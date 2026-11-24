@@ -4,7 +4,7 @@ import { Icon } from '../components/Icon'
 import { ClinicSheet } from '../components/ClinicSheet'
 import { SelectorHorario } from '../components/SelectorHorario'
 import { container, link, outlineBtn, solidBtn } from '../components/ui'
-import { CLINICS, findClinic } from '../data/clinics'
+import { CLINICA_INICIAL, findClinic } from '../data/clinics'
 import {
   CANAL, ICONO_CANAL, METODO, PASOS, TIPO_EVENTO, TICK_MS, avance, conEvento, conNota, esNotaInterna,
   fechaLarga, hace, horaEvento, TOTAL_PASOS, yaPaso, type Tramite,
@@ -209,7 +209,7 @@ function Ficha({ t }: { t: Tramite }) {
       <div className="lg:col-span-5"><Linea t={t} /></div>
 
       {clinicas && (
-        <ClinicSheet titulo="Confirmar clínica del paciente" current={CLINICS[0]} sinSeleccion
+        <ClinicSheet titulo="Confirmar clínica del paciente" current={CLINICA_INICIAL} sinSeleccion
           onSelect={(cl) => confirmarClinica(cl.name)} onClose={() => setClinicas(false)} />
       )}
     </div>

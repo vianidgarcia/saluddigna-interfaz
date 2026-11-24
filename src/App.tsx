@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Ctx, type AppCtx, type EstudioElegido, type View } from './context'
-import { CLINICS } from './data/clinics'
+import { CLINICA_INICIAL } from './data/clinics'
 import { Header } from './components/Header'
 import { Cookies } from './components/Cookies'
 import { Footer } from './components/Footer'
@@ -57,7 +57,7 @@ export default function App() {
     return () => window.removeEventListener('storage', onStorage)
   }, [])
   const [view, setView] = useState<View>(() => loadView(tramite))
-  const [clinic, setClinic] = useState(CLINICS[0])
+  const [clinic, setClinic] = useState(CLINICA_INICIAL)
   const [sheet, setSheet] = useState(false)
   const [cookies, setCookies] = useState(() => { try { return !window.localStorage.getItem(COOKIES_KEY) } catch { return true } })
   const cerrarCookies = (eleccion: string) => {
