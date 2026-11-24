@@ -23,6 +23,10 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
   `data/clinics.ts` (búsqueda y distancias). `components/BuscadorClinica`: estado, ciudad, sucursal y
   "Usar mi ubicación" (geolocalización real; si no se comparte, ubicación de ejemplo en Culiacán), de 20 en 20.
   Lo usan el paso 2 del agendado y `ClinicSheet` (también el asesor).
+- Mapa: `components/MapaClinicas` (Leaflet + mosaicos de OpenStreetMap, sin clave; atribución obligatoria) muestra todas
+  las coincidencias del buscador; tocar un punto elige la clínica. Se carga diferido con `MapaDiferido` (no pesa en el
+  inicio) y, si no se puede descargar, avisa y la lista sigue funcionando. Sin animaciones de zoom/encuadre: Leaflet
+  falla si se desmonta a mitad de una animación. En pruebas automatizadas, `tile.openstreetmap.org` se sirve con una imagen vacía.
 - `src/components/`: piezas de interfaz (Header, StaffHeader, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, BuscadorClinica, SelectorHorario, Pwa, Icon, ui).
 - `src/views/`: Entrar, Home, Agendar, Pay, Tramites, Resultados, Asesor (también la usa Administrador).
 - `src/data/`: clinics, studies, packages.

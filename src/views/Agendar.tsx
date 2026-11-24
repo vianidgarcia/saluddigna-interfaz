@@ -6,6 +6,7 @@ import { Icon } from '../components/Icon'
 import { CHIPS, STUDIES } from '../data/studies'
 import { findClinic } from '../data/clinics'
 import { FiltrosClinica, MasClinicas, fmtKm, useBuscadorClinica } from '../components/BuscadorClinica'
+import { MapaClinicasDiferido as MapaClinicas } from '../components/MapaDiferido'
 import { NB, WA, container, chip, link, outlineBtn, solidBtn } from '../components/ui'
 import {
   LISTA_PASOS, METODO, PASOS, TOTAL_PASOS, avance, conEvento, fechaLarga, pasoCompleto, yaPaso,
@@ -176,19 +177,24 @@ function PasoClinica({ t }: { t: Tramite }) {
   const elegida = findClinic(t.clinica)
   // la clínica ya elegida se mantiene visible aunque los filtros no la incluyan
   const filas = elegida && !b.resultados.some((r) => r.c.name === elegida.name) ? [{ c: elegida, km: undefined }, ...b.resultados] : b.resultados
+  const masCercana = b.ubicacion ? b.resultados[0]?.c.name : null
   return (
     <>
       <FiltrosClinica b={b} id="pc" />
+      <div className="mt-4">
+        <MapaClinicas clinicas={b.enMapa.map((r) => r.c)} elegida={t.clinica} ubicacion={b.ubicacion}
+          onElegir={(c) => update((x) => ({ ...x, clinica: c.name, clinicaPendiente: false }))} />
+      </div>
       <fieldset className="mt-6">
         <legend className="text-base font-semibold text-[#1F2933]">Elige una clínica</legend>
         <div className="mt-2 flex flex-col gap-2">
-          {filas.map(({ c, km }, i) => (
+          {filas.map(({ c, km }) => (
             <label key={c.name} className={`${optionRow} border-[#D6E4F5] hover:border-[#0074D9]`}>
               <input type="radio" name="clinica" className={radio} checked={t.clinica === c.name}
                 onChange={() => update((x) => ({ ...x, clinica: c.name, clinicaPendiente: false }))} />
               <span className="min-w-0">
                 <span className="block text-base font-semibold text-[#1F2933]">{c.name}</span>
-                {i === 0 && km !== undefined && <span className="block t-meta font-semibold text-[#005BB0]">Más cercana</span>}
+                {c.name === masCercana && <span className="block t-meta font-semibold text-[#005BB0]">Más cercana</span>}
                 <span className="block t-meta text-[#5B6B7A]">{c.ciudad}, {c.estado}{km !== undefined && <> · {fmtKm(km)}</>}</span>
                 <span className="block t-meta text-[#43474A]">{c.address}</span>
                 {(c.phone || c.horario) && <span className="block t-meta text-[#5B6B7A]">{c.phone && <>Tel.{NB}{c.phone}</>}{c.phone && c.horario && ' · '}{c.horario}</span>}

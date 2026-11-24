@@ -40,6 +40,8 @@ export function useBuscadorClinica() {
     estado, setEstado, ciudad, setCiudad: (c: string) => { setCiudad(c); reinicia() }, q, setQ: (x: string) => { setQ(x); reinicia() },
     ubicacion, buscando, usarUbicacion, limpiar, activo,
     total: todos.length,
+    /** todas las coincidencias (sin paginar) para el mapa; sin filtros, el directorio completo */
+    enMapa: todos,
     resultados: activo ? todos.slice(0, limite) : [],
     hayMas: activo && todos.length > limite,
     verMas: () => setLimite((n) => n + POR_PAGINA),
