@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { container, outlineBtn, link } from './ui'
 
-export function Cookies({ onDone }: { onDone: () => void }) {
+export function Cookies({ onDone }: { onDone: (eleccion: 'todas' | 'necesarias') => void }) {
   const [cfg, setCfg] = useState(false)
   const [analytics, setAnalytics] = useState(false)
   return (
@@ -10,8 +10,8 @@ export function Cookies({ onDone }: { onDone: () => void }) {
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
           <p className="t-body text-[#1F2933]">Usamos cookies necesarias para que el sitio funcione y, si lo permites, analíticas para mejorarlo.</p>
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={onDone} className={outlineBtn}>Aceptar</button>
-            <button onClick={onDone} className={outlineBtn}>Rechazar</button>
+            <button onClick={() => onDone('todas')} className={outlineBtn}>Aceptar</button>
+            <button onClick={() => onDone('necesarias')} className={outlineBtn}>Rechazar</button>
             <button onClick={() => setCfg(!cfg)} aria-expanded={cfg} aria-controls="ck-cfg" className={link}>Configurar</button>
           </div>
         </div>
@@ -25,7 +25,7 @@ export function Cookies({ onDone }: { onDone: () => void }) {
               <input type="checkbox" checked={analytics} onChange={(e) => setAnalytics(e.target.checked)} className="size-5 accent-[#005BB0]" />
               <span>Analíticas</span>
             </label>
-            <button onClick={onDone} className={`${outlineBtn} lg:ml-auto`}>Guardar preferencias</button>
+            <button onClick={() => onDone(analytics ? 'todas' : 'necesarias')} className={`${outlineBtn} lg:ml-auto`}>Guardar preferencias</button>
           </div>
         )}
       </div>

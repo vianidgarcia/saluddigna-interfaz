@@ -1,7 +1,7 @@
 import { useApp } from '../context'
 import { PACKAGES } from '../data/packages'
 import { Icon } from './Icon'
-import { NB, container, link, solidBtn } from './ui'
+import { NB, container, link, outlineBtn } from './ui'
 
 export function Packages() {
   const { startAgendar, toast } = useApp()
@@ -15,7 +15,7 @@ export function Packages() {
             <h3 className="mt-4 t-card font-head text-[#1F2933]">{t}{NB}–{NB}{p}</h3>
             <p className="mt-1 t-meta text-[#5B6B7A]">IVA incluido</p>
             <button onClick={() => toast()} className={`${link} mt-4 mb-auto self-start`}>Ver preparaciones</button>
-            <button onClick={() => startAgendar({ categoria: 'Paquetes', nombre: t, precio: p })} className={`${solidBtn} mt-6 w-full`}><Icon n="calendar" />Agendar cita</button>
+            <button onClick={() => startAgendar({ categoria: 'Paquetes', nombre: t, precio: p })} className={`${outlineBtn} mt-6 w-full`}><Icon n="calendar" />Agendar cita</button>
           </li>
         ))}
       </ul>

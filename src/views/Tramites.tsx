@@ -2,7 +2,7 @@ import { useApp } from '../context'
 import { Back } from '../components/Back'
 import { Icon } from '../components/Icon'
 import { container, outlineBtn, solidBtn } from '../components/ui'
-import { CANAL, ICONO_CANAL, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
+import { CANAL, ICONO_CANAL, esNotaInterna, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
 
 export function Tramites() {
   const { tramite: t, continuar, startAgendar } = useApp()
@@ -45,7 +45,7 @@ export function Tramites() {
         <h2 id="hist-t" className="t-card font-head text-[#1F2933]">Historial del trámite</h2>
         <p className="mt-1 t-meta text-[#5B6B7A]">Cada movimiento queda registrado, sin importar el canal. Así nadie te vuelve a preguntar lo que ya dijiste.</p>
         <ol className="mt-4">
-          {[...t.eventos].reverse().map((e, i) => (
+          {t.eventos.filter((e) => !esNotaInterna(e)).reverse().map((e, i) => (
             <li key={i} className="flex gap-3 border-t border-[#D6E4F5] py-3">
               <Icon n={ICONO_CANAL[e.canal]} className="mt-0.5 text-[#0074D9]" />
               <div>
