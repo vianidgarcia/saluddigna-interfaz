@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { fechaLarga, hoyISO, isoDia, yaPaso } from '../state/tramite'
+import { fechaLarga, hoyISO, isoDia, yaPaso, fmtHora } from '../state/tramite'
 import { Icon } from './Icon'
 
 /* Calendario + horarios. Nunca permite fechas ni horas que ya pasaron.
@@ -34,7 +34,7 @@ export function SelectorHorario({ fecha, hora, onFecha, onHora, id = 'h' }: {
   const elegirDia = (v: string) => { onFecha(v); setToques((n) => n + 1) }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-10">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:gap-8">
       <Calendario id={id} fecha={fechaValida} hoy={hoy} max={max} habilitado={habilitado} onFecha={elegirDia} />
       <div>
         {fechaValida
@@ -186,13 +186,13 @@ function SelectorHora({ id, fecha, hora, onHora, toques }: { id: string; fecha: 
           <div key={nombre} className="min-w-0">
             <p id={`${id}-${nombre}`} className="text-base font-semibold text-titulo">{nombre}</p>
             {!horas.length && <p className="mt-2 t-meta text-secundario">Sin horarios este día</p>}
-            {horas.length > 0 && <div role="group" aria-labelledby={`${id}-${nombre}`} className="mt-2 grid grid-cols-2 gap-2">
+            {horas.length > 0 && <div role="group" aria-labelledby={`${id}-${nombre}`} className="mt-2 grid grid-cols-2 gap-2 max-[359px]:grid-cols-1">
               {horas.map((h) => {
                 const on = elegida === h
                 return (
-                  <button key={h} onClick={() => onHora(h)} aria-pressed={on} aria-label={`${h} horas`}
-                    className={`min-h-12 rounded-lg border text-base font-semibold transition-colors ${on ? 'border-accion-hover bg-accion-hover text-white' : 'border-borde bg-superficie text-titulo hover:border-borde-accion hover:bg-resaltado'}`}>
-                    {h}
+                  <button key={h} onClick={() => onHora(h)} aria-pressed={on} aria-label={fmtHora(h)}
+                    className={`min-h-12 whitespace-nowrap rounded-lg border px-1 text-base font-semibold transition-colors ${on ? 'border-accion-hover bg-accion-hover text-white' : 'border-borde bg-superficie text-titulo hover:border-borde-accion hover:bg-resaltado'}`}>
+                    {fmtHora(h)}
                   </button>
                 )
               })}
@@ -205,7 +205,7 @@ function SelectorHora({ id, fecha, hora, onHora, toques }: { id: string; fecha: 
         {elegida && (
           <p className="flex items-start gap-2 rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">
             <Icon n="calendar" className="mt-0.5 text-enlace" />
-            <span>Tu cita: <strong className="font-bold first-letter:uppercase">{fechaLarga(fecha)}, {elegida} h</strong></span>
+            <span>Tu cita: <strong className="font-bold first-letter:uppercase">{fechaLarga(fecha)}, {fmtHora(elegida)}</strong></span>
           </p>
         )}
       </div>

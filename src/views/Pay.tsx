@@ -3,7 +3,7 @@ import { useApp } from '../context'
 import { Back } from '../components/Back'
 import { Icon } from '../components/Icon'
 import { WA, NB, container, outlineBtn, link, solidBtn } from '../components/ui'
-import { TOTAL_PASOS, avance, conEvento, fechaLarga, METODO, type Tramite } from '../state/tramite'
+import { TOTAL_PASOS, avance, conEvento, fechaLarga, METODO, type Tramite, fmtHora } from '../state/tramite'
 import {
   CODIGO_VERIFICACION, TARJETAS_PRUEBA, clabeEjemplo, formatoNumero, marcaDe, procesarCargo, referenciaSpei, referenciaTienda,
   soloDigitos, validarTarjeta, verificarCodigo, type Cargo, type DatosTarjeta, type Errores,
@@ -47,7 +47,7 @@ export function Pay() {
     update((x) => {
       const pago = { ...(x.pago ?? { intentos: 0 }), ...extra, estado: 'aprobado' as const, fecha: new Date().toISOString() }
       const conPago = conEvento({ ...x, pago }, 'pago.aprobado', detalle, 'pasarela')
-      return conEvento({ ...conPago, estado: 'confirmada', desdeResumen: false }, 'cita.confirmada', `${METODO[metodo]} · ${x.fecha ? fechaLarga(x.fecha) : ''} ${x.hora ?? ''}`, 'pasarela')
+      return conEvento({ ...conPago, estado: 'confirmada', desdeResumen: false }, 'cita.confirmada', `${METODO[metodo]} · ${x.fecha ? fechaLarga(x.fecha) : ''} ${fmtHora(x.hora)}`, 'pasarela')
     })
     go('agendar')
   }
@@ -340,7 +340,7 @@ function Montos({ cantidad, nota, t }: { cantidad: string; nota: string; t: Tram
     <dl className="mt-6 grid gap-3 border-t border-borde pt-6 t-body">
       <div><dt className="t-meta text-secundario">Monto</dt><dd className="font-semibold text-titulo">{cantidad} <span className="t-meta font-normal text-secundario">{nota}</span></dd></div>
       <div><dt className="t-meta text-secundario">Paga antes de tu cita</dt><dd className="font-semibold text-titulo first-letter:uppercase">
-        {t.fecha ? `${fechaLarga(t.fecha)}, ${t.hora}` : '—'} <span className="t-meta font-normal text-secundario">(horario de demostración)</span>
+        {t.fecha ? `${fechaLarga(t.fecha)}, ${fmtHora(t.hora)}` : '—'} <span className="t-meta font-normal text-secundario">(horario de demostración)</span>
       </dd></div>
     </dl>
   )

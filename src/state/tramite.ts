@@ -98,6 +98,14 @@ export function loadTramiteAlAbrir(): Tramite | null {
   return t
 }
 
+/** Hora para mostrar en formato de 12 horas con AM/PM ("13:30" → "01:30 PM"). Internamente se guarda "HH:MM" (24 h). */
+export function fmtHora(h: string | null | undefined): string {
+  if (!h) return ''
+  const [hh, mm] = h.split(':').map(Number)
+  const h12 = hh % 12 === 0 ? 12 : hh % 12
+  return `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`
+}
+
 /** Teléfono a 10 dígitos con formato 667 123 4567. */
 export const fmtTelefono = (d: string | null) => (d ?? '').replace(/^(\d{3})(\d{3})(\d{4})$/, '$1 $2 $3')
 
