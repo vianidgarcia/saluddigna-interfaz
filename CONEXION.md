@@ -118,10 +118,30 @@ crear el usuario en Auth e insertarlo en `core.staff`; un trigger copia su rol a
 la base son `asesor`, `supervisor`, `admin` y `recepcion`; el portal los reduce a dos
 (`asesor` y `admin`) en `aRolPortal`. La bandeja omnicanal necesita rol de supervisor o admin.
 
+## Probar el enlace de punta a punta
+
+`npm run probar-enlace` corre el mismo flujo que hace la interfaz al confirmar una cita, sin
+navegador ni React, usando los módulos de `src/api/`. Además mide los dos choques conocidos entre
+los dos proyectos: cuántos estudios y clínicas del portal existen en la base, y cuáles de las horas
+que ofrece `SelectorHorario` rechazaría la clínica.
+
+Antes hay que levantar el backend local (en el repo `hackathon-puebla`):
+
+```bash
+npx supabase start
+cd simulador && npm install && npm run usuarios   # crea el personal de prueba
+```
+
+y aquí poner en `.env.local` el modo api con la URL y la clave que da `npx supabase status`.
+El script usa el número de prueba **866 123 4571** con OTP **123456**. Es re-ejecutable: si la
+paciente de prueba ya tiene el trámite abierto lo dice y sigue; para empezar de cero,
+`npx supabase db reset` en el backend.
+
 ## Antes de entregar
 
 ```bash
-npm run tipos     # tsc --noEmit: vite build NO revisa tipos
-npm run probar    # pruebas de las equivalencias (no necesitan base de datos)
+npm run tipos          # tsc --noEmit: vite build NO revisa tipos
+npm run probar         # equivalencias (funciones puras, sin base de datos)
+npm run probar-enlace  # flujo completo contra Supabase local
 npm run build
 ```
