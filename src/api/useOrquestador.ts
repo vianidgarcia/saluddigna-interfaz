@@ -143,13 +143,14 @@ export function useOrquestador(
       await orq.crearTramiteCompleto({ estudio: t.estudio?.nombre ?? '', clinica: t.clinica })
 
       // 4. el horario (hay que pedir la lista: de ahí sale el fecha_hora exacto de la clínica)
-      if (t.clinica && t.fecha && t.hora) {
+      //    Si el trámite ya existía y ya tiene su cita, se conserva: no se vuelve a reservar.
+      if (t.clinica && t.fecha && t.hora && !orq.tramiteRemoto()?.contexto?.cita_id) {
         await orq.horarios(t.clinica, t.estudio?.nombre ?? '', t.fecha)
         await orq.reservar(t.fecha, t.hora)
       }
 
       // 5. el pago lo genera la base, salvo el pago en clínica (se cobra en mostrador)
-      if (t.metodoPago && t.metodoPago !== 'en_clinica') await orq.pago()
+      if (t.metodoPago && t.metodoPago !== 'en_clinica' && !orq.tramiteRemoto()?.contexto?.pago_id) await orq.pago()
 
       aplicar(await orq.sincronizar())
       setEstado('listo')

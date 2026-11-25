@@ -19,7 +19,7 @@
 import {
   ErrorApi, asegurarSesionAnonima, avanzarTramite, cerrarInteraccion, confirmarOtpTelefono,
   generarPago, guardarDatosPaciente, horariosDisponibles, iniciarSesionPaciente, iniciarTramite,
-  nuevaSesionAnonima, obtenerContexto, pedirOtpTelefono, reservarCita, suscribirPaciente,
+  nuevaSesionAnonima, obtenerContexto, pedirOtpTelefono, reservarCita, retomarTramite, suscribirPaciente,
   type Cliente, type Contexto, type EventoPaciente, type Horario, type ModoOtp, type Pago,
   type Tramite as TramiteApi,
 } from './api'
@@ -121,6 +121,14 @@ export async function guardarNombre(completo: string): Promise<Contexto> {
 
 /* ------------------------------------------------------------- escrituras ---- */
 
+/** Retoma el trámite abierto con ese folio (el que la base dijo que ya existía). */
+async function retomarAbierto(c: Cliente, interaccion: string, folio: string | undefined, original: ErrorApi): Promise<TramiteApi> {
+  const ctx = await obtenerContexto(c, interaccion)
+  const abierto = ctx.tramites_abiertos?.find((x) => x.folio === folio)
+  if (!abierto) throw original
+  return retomarTramite(c, interaccion, abierto.id)
+}
+
 /** Reintenta UNA vez si otro canal movió el trámite primero (PT409 conflicto_de_version). */
 async function conReintento<T>(fn: () => Promise<T>): Promise<T> {
   try {
@@ -151,10 +159,19 @@ export async function crearTramiteCompleto(datos: { estudio: string; clinica: st
   if (!estudioId) throw new Error(`El catálogo de la base no tiene el estudio “${datos.estudio}”. Hay que cargar el catálogo real (core.estudios).`)
 
   // el trámite nace ya con su estudio, en el paso "elegir clínica"
-  let t = await iniciarTramite(c, interaccion, estudioId)
+  let t: TramiteApi
+  try {
+    t = await iniciarTramite(c, interaccion, estudioId)
+  } catch (e) {
+    if (!(e instanceof ErrorApi && e.code === 'PT409' && e.message === 'tramite_duplicado')) throw e
+    // Ya hay uno abierto de este estudio (p. ej. un intento anterior que quedó a medias): se RETOMA y se
+    // completa lo que le falte. Volver a pedir que se cree solo repite el error y el paciente no avanza.
+    t = await retomarAbierto(c, interaccion, e.detalle.folio, e)
+  }
   enlace.remoto = t
 
-  if (datos.clinica) {
+  // si ya tiene clínica se respeta la que eligió antes: "continúe ese"
+  if (datos.clinica && !t.clinica) {
     const clinicaId = await idClinica(c, estudioId, datos.clinica)
     if (!clinicaId) throw new Error(`El catálogo de la base no tiene la clínica “${datos.clinica}”. Hay que generar el seed desde data/clinicasData.ts.`)
     t = await conReintento(() => avanzarTramite(c, interaccion, exigirRemoto(), 'seleccion_horario', { clinica_id: clinicaId }))

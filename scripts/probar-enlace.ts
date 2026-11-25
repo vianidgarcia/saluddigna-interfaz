@@ -93,14 +93,9 @@ async function main() {
   try {
     const t = await orq.crearTramiteCompleto({ estudio, clinica })
     folio = t.folio
-    ok(true, `trámite creado en la base con folio ${folio} (el portal ya no inventa el folio)`)
+    ok(true, `trámite en la base con folio ${folio} (creado o retomado si ya estaba abierto)`)
     ok(!!(await idClinica(c, estudioPrueba, clinica)), 'la clínica del portal resolvió a un uuid de la base')
   } catch (e) {
-    if (e instanceof ErrorApi && e.code === 'PT409') {
-      nota(`la paciente de prueba ya tiene ese trámite abierto (${e.message}): esperado al re-ejecutar`)
-      nota('para empezar de cero: en el backend, npx supabase db reset')
-      return
-    }
     ok(false, `crearTramiteCompleto: ${motivo(e)}`)
     return
   }
@@ -131,18 +126,28 @@ async function main() {
   ok(horasSelector.every((h) => delDia.includes(h)), `todas las horas que ofrecería el selector el ${dia} las acepta la clínica`)
 
   titulo('5. Reserva y pago')
-  try {
-    const t = await orq.reservar(dia, delDia[0])
-    ok(t.contexto.fecha_hora != null, `cita reservada para ${t.contexto.fecha_hora}`)
-  } catch (e) {
-    ok(false, `reservar: ${motivo(e)}`)
+  // Igual que el portal: si el trámite ya existía y ya tiene cita o pago, se conservan (no se repite el paso).
+  const previo = orq.tramiteRemoto()
+  if (previo?.contexto?.cita_id) {
+    ok(true, `el trámite ya tenía su cita (${previo.contexto.fecha_hora}): se conserva, no se vuelve a reservar`)
+  } else {
+    try {
+      const t = await orq.reservar(dia, delDia[0])
+      ok(t.contexto.fecha_hora != null, `cita reservada para ${t.contexto.fecha_hora}`)
+    } catch (e) {
+      ok(false, `reservar: ${motivo(e)}`)
+    }
   }
-  try {
-    const p = await orq.pago()
-    ok(!!p.link_pago, `pago generado por la base: ${p.link_pago} (monto ${p.monto})`)
-    nota('el portal todavía cobra con su pasarela simulada: pendiente usar esta liga.')
-  } catch (e) {
-    ok(false, `generarPago: ${motivo(e)}`)
+  if (orq.tramiteRemoto()?.contexto?.pago_id) {
+    ok(true, 'el trámite ya tenía su pago generado: se conserva')
+  } else {
+    try {
+      const p = await orq.pago()
+      ok(!!p.link_pago, `pago generado por la base: ${p.link_pago} (monto ${p.monto})`)
+      nota('el portal todavía cobra con su pasarela simulada: pendiente usar esta liga.')
+    } catch (e) {
+      ok(false, `generarPago: ${motivo(e)}`)
+    }
   }
 
   titulo('6. Lo que vería el asesor')
