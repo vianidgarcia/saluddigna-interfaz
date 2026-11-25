@@ -280,8 +280,12 @@ function PasoClinica({ t }: { t: Tramite }) {
 
 /* ---------- paso 3: fecha y hora ---------- */
 function PasoFecha({ t }: { t: Tramite }) {
-  const { update } = useApp()
-  return <SelectorHorario fecha={t.fecha} hora={t.hora}
+  const { update, horariosClinica } = useApp()
+  const { clinica, estudio } = t
+  // modo api: solo se ofrecen las horas que la clínica acepta; el key reinicia el selector al cambiar de clínica o estudio
+  const consultar = horariosClinica && clinica && estudio
+    ? (desde: string, hasta: string) => horariosClinica(clinica, estudio.nombre, desde, hasta) : undefined
+  return <SelectorHorario key={`${clinica}|${estudio?.nombre}`} consultar={consultar} fecha={t.fecha} hora={t.hora}
     onFecha={(v) => update((x) => ({ ...x, fecha: v, hora: x.fecha === v ? x.hora : null }))}
     onHora={(h) => update((x) => ({ ...x, hora: h }))} />
 }

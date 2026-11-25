@@ -24,6 +24,8 @@ export type AppCtx = {
   /** visitante: abre la pantalla Entrar con un rol preseleccionado */
   abrirEntrar: (rol?: Rol, motivo?: string) => void
   reiniciarDemo: () => void
+  /** Modo api: horarios reales de una clínica entre dos fechas. Undefined en modo local. */
+  horariosClinica?: (clinica: string, estudio: string, desde: string, hasta: string) => Promise<{ fecha: string; hora: string }[] | null>
 }
 export const Ctx = createContext<AppCtx>(null as unknown as AppCtx)
 export const useApp = () => useContext(Ctx)
