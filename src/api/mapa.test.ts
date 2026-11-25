@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   CANAL_DESDE_API, CANAL_HACIA_API, PASO_DESDE_API, PASO_HACIA_API, canalDesdeApi, claveHorario,
-  estadoDesdeApi, fechaHoraDeHorarios, fusionarDesdeApi, normalizar, partirFechaHora,
+  estadoDesdeApi, esMismoTramite, fechaHoraDeHorarios, fusionarDesdeApi, normalizar, partirFechaHora,
   aE164, partirNombre,
 } from './mapa.ts'
 import type { Tramite as TramiteApi, Horario } from './api.ts'
@@ -112,4 +112,13 @@ test('el teléfono de 10 dígitos del portal se vuelve el que espera Auth', () =
 test('normalizar permite emparejar catálogos escritos distinto', () => {
   assert.equal(normalizar('Mastografía  BILATERAL'), 'mastografia bilateral')
   assert.equal(normalizar(' Culiacán Centro '), 'culiacan centro')
+})
+
+test('un trámite viejo de la base no se funde sobre el que el paciente arma ahora', () => {
+  const local = { id: 'SD-1700000000', estudio: { categoria: 'Laboratorio', nombre: 'Biometría hemática' } } as Tramite
+  const viejo = base({ folio: 'SD-846S', estudio: { id: 'e1', nombre: 'Mastografía bilateral' } as TramiteApi['estudio'] })
+  assert.equal(esMismoTramite(local, viejo), false, 'otro estudio y otro folio: es otro trámite')
+  assert.equal(esMismoTramite(local, base({ folio: 'SD-1700000000' })), true, 'mismo folio')
+  const mismoEstudio = base({ folio: 'SD-9X9X', estudio: { id: 'e2', nombre: 'Biometría hemática' } as TramiteApi['estudio'] })
+  assert.equal(esMismoTramite(local, mismoEstudio), true, 'mismo estudio: se continúa el de otro canal')
 })

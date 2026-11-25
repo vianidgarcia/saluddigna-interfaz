@@ -92,15 +92,20 @@ avisa al paciente y el trámite se puede ver pero no cambiar.
 
 ## Lo que falta decidir en equipo
 
-1. **El catálogo no coincide.** El portal tiene las 261 sucursales reales en `data/clinicasData.ts`
-   y el backend usa el catálogo de ejemplo de su `seed.sql`. `catalogo.ts` empareja por nombre
-   normalizado y, si no encuentra algo, **no inventa un id**: avisa. La solución de fondo es
-   generar el seed del backend desde `data/clinicasData.ts` para que los ids y los horarios sean
-   los mismos. Sin horarios cargados (`core.horarios_clinica`), una clínica no ofrece horarios ni
-   acepta reservas.
-2. **Horarios.** `useOrquestador` ya expone `horarios()` con los reales de la clínica, pero
-   `SelectorHorario` sigue pintando los de ejemplo del portal. Falta conectarlo: es el cambio que
-   más se nota, porque hoy el portal puede ofrecer un horario que la base rechaza.
+1. ~~El catálogo no coincide.~~ **Resuelto con un seed generado.** `npm run seed-catalogo` lee
+   `data/clinicasData.ts` y `data/studies.ts` y escribe
+   `hackathon-puebla/supabase/seed-catalogo-real.sql`: las 261 clínicas (claves `SD-<id>`, mismo nombre
+   que el portal), los 18 estudios (sin duplicar los 6 de `seed.sql`), `clinica_estudios` y los horarios
+   reales de cada sucursal en `core.horarios_clinica`. Es idempotente y NO está en `config.toml`, porque
+   las pruebas pgTAP (`110_catalogo`, `120_horarios`…) cuentan 6 estudios y 3 clínicas. Se carga a mano
+   después de `db reset` o en un proyecto nuevo: `npx supabase db query --remote --yes -f supabase/seed-catalogo-real.sql`
+   (o `--local`/el SQL Editor), desde la carpeta del backend. En hosteado NO se usa `seed.sql`. Los precios del seed son de ejemplo (la base exige
+   monto > 0) y cada clínica ofrece todos los estudios, igual que el portal; no hay dato real de ninguno.
+2. ~~Horarios.~~ **Resuelto.** En modo api `SelectorHorario` recibe `consultar` (viene de `horariosClinica`
+   en el contexto, que usa `orq.horariosRango`) y solo ofrece lo que la base acepta. La base entrega
+   máximo 14 días y 100 horarios por consulta, así que se pide por mes visible y por tramos. Si la base
+   no responde o no conoce la clínica, el selector vuelve a los horarios de demostración y lo avisa; en
+   modo local no cambia nada.
 3. **Dos bots de WhatsApp.** El backend trae el suyo (`whatsapp-webhook` + `agente.ts`) y existe
    además [`IsraelCarry22/salud-digna-chatbot`](https://github.com/IsraelCarry22/salud-digna-chatbot),
    que conversa mucho mejor pero guarda en su propio `memoria.json`. Para que sea omnicanal de

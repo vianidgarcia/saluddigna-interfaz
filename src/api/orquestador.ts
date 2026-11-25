@@ -163,6 +163,18 @@ export async function crearTramiteCompleto(datos: { estudio: string; clinica: st
   return t
 }
 
+/** De qué clínica y estudio son los horarios guardados en `enlace.horarios` (clave "clinicaId|estudioId"). */
+let horariosDe = ''
+
+/** Guarda horarios para reservar: de la misma clínica y estudio se SUMAN; de otra, reemplazan. */
+function recordarHorarios(clave: string, nuevos: Horario[]) {
+  const previos = clave === horariosDe ? enlace.horarios : []
+  const porHora = new Map(previos.map((h) => [h.fecha_hora, h]))
+  for (const h of nuevos) porHora.set(h.fecha_hora, h)
+  horariosDe = clave
+  enlace.horarios = [...porHora.values()].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
+}
+
 /** Horarios reales de la clínica (los del portal son de ejemplo). Guarda la lista para reservar. */
 export async function horarios(clinicaNombre: string, estudioNombre: string, desde?: string, dias = 21): Promise<Horario[]> {
   const c = exigirCliente()
@@ -170,8 +182,45 @@ export async function horarios(clinicaNombre: string, estudioNombre: string, des
   if (!estudioId) return []
   const clinicaId = await idClinica(c, estudioId, clinicaNombre)
   if (!clinicaId) return []
-  enlace.horarios = await horariosDisponibles(c, clinicaId, estudioId, desde, dias)
-  return enlace.horarios
+  const lista = await horariosDisponibles(c, clinicaId, estudioId, desde, dias)
+  recordarHorarios(`${clinicaId}|${estudioId}`, lista)
+  return lista
+}
+
+/** Un día después de 'AAAA-MM-DD' (aritmética de calendario: no depende de la zona horaria). */
+const diaSiguiente = (iso: string) => {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+}
+const diasEntre = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
+
+/**
+ * Horarios libres de 'desde' a 'hasta' (ambos 'AAAA-MM-DD', inclusive).
+ * La base entrega máximo 14 días y 100 horarios por consulta: se pide por tramos y, si un tramo se
+ * llena, se continúa desde el último día recibido. Lo recibido se recuerda para `reservar`.
+ * `null` = la base no conoce esa clínica o ese estudio (distinto de "sin horarios libres").
+ */
+export async function horariosRango(clinicaNombre: string, estudioNombre: string, desde: string, hasta: string): Promise<Horario[] | null> {
+  const c = exigirCliente()
+  const estudioId = await idEstudio(c, estudioNombre)
+  const clinicaId = estudioId ? await idClinica(c, estudioId, clinicaNombre) : null
+  if (!estudioId || !clinicaId) return null
+  const todos = new Map<string, Horario>()
+  let cursor = desde
+  while (cursor <= hasta) {
+    const dias = Math.min(14, diasEntre(cursor, hasta) + 1)
+    const lote = await horariosDisponibles(c, clinicaId, estudioId, cursor, dias)
+    for (const h of lote) todos.set(h.fecha_hora, h)
+    const ultimo = lote.at(-1)?.fecha
+    if (lote.length >= 100 && ultimo && ultimo > cursor) {
+      cursor = ultimo // tramo lleno (tope de 100): se continúa desde el último día recibido
+    } else {
+      for (let i = 0; i < dias; i++) cursor = diaSiguiente(cursor) // se avanza al final de la ventana
+    }
+  }
+  const lista = [...todos.values()].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
+  recordarHorarios(`${clinicaId}|${estudioId}`, lista)
+  return lista
 }
 
 /** Reserva el horario que el paciente eligió en el portal (fecha 'AAAA-MM-DD' y hora 'HH:MM'). */

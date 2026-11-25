@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Contexto, EventoPaciente, ModoOtp } from './api'
 import { MODO, esApi } from './modo'
-import { canalDesdeApi, detalleEvento, fusionarDesdeApi } from './mapa'
+import { canalDesdeApi, detalleEvento, esMismoTramite, fusionarDesdeApi } from './mapa'
 import { conEvento, type Tramite } from '../state/tramite'
 
 /* El orquestador (y con él la biblioteca de Supabase) se descarga la primera vez que se necesita.
@@ -47,6 +47,8 @@ export type Orquestador = {
   confirmarCodigo: (telefono10: string, codigo: string, modo: ModoOtp) => Promise<void>
   /** Horarios reales de la clínica; vacío si el enlace no está listo. */
   horarios: Orq['horarios']
+  /** Horarios libres de un rango de fechas (null = la base no conoce esa clínica o estudio). */
+  horariosRango: Orq['horariosRango']
   reiniciar: () => Promise<void>
 }
 
@@ -75,7 +77,8 @@ export function useOrquestador(
     setVerificado(ctx.sesion.nivel_verificacion === 'verificada')
     const remoto = ctx.tramite_activo
     const local = tramiteRef.current
-    if (remoto && local) alCambiar.current(fusionarDesdeApi(local, remoto))
+    // solo si es el mismo trámite: el activo de la base puede ser el de una prueba o cita anterior
+    if (remoto && local && esMismoTramite(local, remoto)) alCambiar.current(fusionarDesdeApi(local, remoto))
   }, [tramiteRef])
 
   /* ---- abrir la sesión al cargar la página ---- */
@@ -147,6 +150,10 @@ export function useOrquestador(
       return { necesitaOtp: false }
     } catch (e) {
       avisar(e, 'No se pudo registrar el trámite en el orquestador; quedó guardado solo en este dispositivo.')
+      // trámite duplicado: ya existe uno igual abierto en la base; se adopta para ver su folio y su avance
+      if (esErrorApi(e) && e.code === 'PT409') {
+        try { aplicar(await (await cargar()).sincronizar()) } catch { /* el aviso ya se mostró */ }
+      }
       return { necesitaOtp: false }
     }
   }, [aplicar, avisar, estado])
@@ -162,6 +169,11 @@ export function useOrquestador(
     return (await cargar()).horarios(...args)
   }, [])
 
+  const horariosRango: Orq['horariosRango'] = useCallback(async (...args: Parameters<Orq['horariosRango']>) => {
+    if (!esApi) return null
+    return (await cargar()).horariosRango(...args)
+  }, [])
+
   const reiniciar = useCallback(async () => {
     if (!esApi) return
     try { aplicar(await (await cargar()).reiniciar()) } catch (e) { avisar(e, 'No se pudo reiniciar la demo en el orquestador.') }
@@ -170,6 +182,6 @@ export function useOrquestador(
   return {
     modo: MODO, estado, verificado, aviso,
     limpiarAviso: () => setAviso(null),
-    confirmar, pedirCodigo, confirmarCodigo, horarios, reiniciar,
+    confirmar, pedirCodigo, confirmarCodigo, horarios, horariosRango, reiniciar,
   }
 }

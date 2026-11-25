@@ -10,6 +10,7 @@
  */
 import { catalogoEstudios, clinicasParaEstudio, type Cliente, type Clinica, type Estudio } from './api'
 import { normalizar } from './mapa'
+import { CLINICAS_DATOS } from '../data/clinicasData'
 
 let estudios: Estudio[] | null = null
 const clinicasPorEstudio = new Map<string, Clinica[]>()
@@ -31,12 +32,17 @@ export async function idEstudio(c: Cliente, nombre: string): Promise<string | nu
   return parcial?.id ?? null
 }
 
-/** Clínicas que la base ofrece para ese estudio (con memoria por estudio). */
-export async function listaClinicas(c: Cliente, estudioId: string): Promise<Clinica[]> {
-  const previo = clinicasPorEstudio.get(estudioId)
+/**
+ * Clínicas que la base ofrece para ese estudio (con memoria por estudio y lugar).
+ * La base devuelve máximo 50 por consulta y el portal tiene 261: sin filtro solo se vería una parte.
+ * Con `ciudad` y `estado` cada consulta trae pocas (en los datos reales, hasta 8 por ciudad).
+ */
+export async function listaClinicas(c: Cliente, estudioId: string, ciudad?: string, estado?: string): Promise<Clinica[]> {
+  const clave = `${estudioId}|${ciudad ?? ''}|${estado ?? ''}`
+  const previo = clinicasPorEstudio.get(clave)
   if (previo) return previo
-  const lista = await clinicasParaEstudio(c, estudioId)
-  clinicasPorEstudio.set(estudioId, lista)
+  const lista = await clinicasParaEstudio(c, estudioId, ciudad, estado)
+  clinicasPorEstudio.set(clave, lista)
   return lista
 }
 
@@ -47,7 +53,9 @@ export async function listaClinicas(c: Cliente, estudioId: string): Promise<Clin
  */
 export async function idClinica(c: Cliente, estudioId: string, nombre: string): Promise<string | null> {
   const n = normalizar(nombre)
-  const lista = await listaClinicas(c, estudioId)
+  // la ciudad y el estado salen del directorio del portal; si el nombre no está ahí, se pide sin filtro
+  const sucursal = CLINICAS_DATOS.find((x) => normalizar(x.name) === n)
+  const lista = await listaClinicas(c, estudioId, sucursal?.ciudad || undefined, sucursal?.estado || undefined)
   const exacto = lista.find((x) => normalizar(x.nombre) === n)
   if (exacto) return exacto.id
   const parcial = lista.find((x) => normalizar(x.nombre).includes(n) || n.includes(normalizar(x.nombre)))

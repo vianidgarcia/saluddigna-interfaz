@@ -96,6 +96,18 @@ export function fechaHoraDeHorarios(horarios: Horario[], fecha: string, hora: st
 /* ------------------------------------------------------- trámite completo ---- */
 
 /**
+ * ¿El trámite de la base es el mismo que el del portal? Es el mismo si ya comparten folio o si piden
+ * el mismo estudio (p. ej. se empezó por WhatsApp y se sigue en la web). Si no, es OTRO trámite:
+ * fundirlo pisaría el estudio, la clínica y la fecha de lo que el paciente está armando ahora.
+ */
+export function esMismoTramite(local: Tramite, remoto: TramiteApi): boolean {
+  if (local.id === remoto.folio) return true
+  const a = local.estudio?.nombre
+  const b = remoto.estudio?.nombre
+  return !!a && !!b && normalizar(a) === normalizar(b)
+}
+
+/**
  * Trae al portal lo que cambió en el orquestador, CONSERVANDO lo que solo existe aquí
  * (línea de tiempo local, método de pago, datos del formulario). Así un cambio hecho por
  * WhatsApp o por el asesor se ve en el portal sin perder el avance local.

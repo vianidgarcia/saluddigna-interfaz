@@ -16,9 +16,9 @@
  * Es re-ejecutable: si la paciente de prueba ya tiene el trámite abierto, lo dice y sigue.
  */
 import { esApi } from '../src/api/modo.ts'
-import { idClinica, idEstudio, listaClinicas, listaEstudios } from '../src/api/catalogo.ts'
+import { idClinica, idEstudio, listaEstudios } from '../src/api/catalogo.ts'
 import { cliente } from '../src/api/cliente.ts'
-import { normalizar, partirNombre } from '../src/api/mapa.ts'
+import { partirNombre } from '../src/api/mapa.ts'
 import * as orq from '../src/api/orquestador.ts'
 import { ErrorApi } from '../src/api/api.ts'
 import { CLINICAS_DATOS } from '../src/data/clinicasData.ts'
@@ -61,18 +61,17 @@ async function main() {
     const id = await idEstudio(c, nombre)
     if (id) { estudioPrueba = id; break }
   }
-  const clinicasBase = await listaClinicas(c, estudioPrueba)
-  nota(`la base trae ${clinicasBase.length} clínicas: ${clinicasBase.map((x) => x.nombre).join(', ')}`)
+  // Se resuelve una muestra repartida por todo el directorio, como lo hace el portal (por ciudad y estado).
+  // No las 261: cada consulta cuenta en el rate limit de la base (PT429) y el portal hace una por confirmación.
+  const paso = Math.ceil(CLINICAS_DATOS.length / 12)
+  const muestra = CLINICAS_DATOS.filter((_, i) => i % paso === 0 || i === CLINICAS_DATOS.length - 1)
   const emparejadas: string[] = []
-  for (const cl of CLINICAS_DATOS) {
-    if (clinicasBase.some((b) => normalizar(b.nombre).includes(normalizar(cl.name)) || normalizar(cl.name).includes(normalizar(b.nombre)))) {
-      emparejadas.push(cl.name)
-    }
+  for (const cl of muestra) {
+    if (await idClinica(c, estudioPrueba, cl.name)) emparejadas.push(cl.name)
   }
-  ok(emparejadas.length > 0, `${emparejadas.length} de ${CLINICAS_DATOS.length} clínicas del portal emparejan con la base`)
-  nota(`emparejan: ${emparejadas.join(', ') || '(ninguna)'}`)
-  nota('las demás darían el aviso "el catálogo de la base no tiene la clínica". Se arregla generando')
-  nota('el seed del backend desde src/data/clinicasData.ts.')
+  ok(emparejadas.length === muestra.length, `${emparejadas.length} de ${muestra.length} clínicas de la muestra (de ${CLINICAS_DATOS.length}) resuelven a un uuid de la base`)
+  const faltan = muestra.filter((cl) => !emparejadas.includes(cl.name)).map((cl) => cl.name)
+  if (faltan.length) nota(`sin equivalente: ${faltan.join(', ')}`)
 
   titulo('3. Flujo completo, igual que al confirmar una cita en el portal')
   await orq.arrancar()
@@ -119,9 +118,17 @@ async function main() {
   const rechazadas = HORAS.filter((h) => !delDia.includes(h))
   ok(rechazadas.length < HORAS.length, `${HORAS.length - rechazadas.length} de las ${HORAS.length} horas del portal existen en la base`)
   if (rechazadas.length) {
-    nota(`el portal ofrece y la base rechazaría: ${rechazadas.join(', ')}`)
-    nota('es el pendiente de conectar SelectorHorario con orq.horarios().')
+    nota(`la rejilla de demostración ofrecería y la base rechazaría: ${rechazadas.join(', ')}`)
+    nota('por eso en modo api SelectorHorario ya no usa la rejilla: pide las horas con orq.horariosRango().')
   }
+  // lo que ve el selector en modo api: el rango pedido por tramos debe incluir todo lo que dio horarios()
+  const hoy = hs[0].fecha
+  const hasta = hs.at(-1)!.fecha
+  const rango = await orq.horariosRango(clinica, estudio, hoy, hasta)
+  ok(rango !== null && hs.every((h) => rango.some((r) => r.fecha_hora === h.fecha_hora)), `horariosRango(${hoy} a ${hasta}) trae los ${hs.length} horarios de horarios()`)
+  ok(rango !== null && rango.every((r) => r.fecha >= hoy && r.fecha <= hasta), 'horariosRango no se sale del rango pedido')
+  const horasSelector = rango?.filter((r) => r.fecha === dia).map((r) => r.hora.slice(0, 5)) ?? []
+  ok(horasSelector.every((h) => delDia.includes(h)), `todas las horas que ofrecería el selector el ${dia} las acepta la clínica`)
 
   titulo('5. Reserva y pago')
   try {

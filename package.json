@@ -10,7 +10,8 @@
     "preview:pwa": "vite build && vite preview --host",
     "probar": "node --test --experimental-strip-types \"src/**/*.test.ts\"",
     "tipos": "tsc --noEmit",
-    "probar-enlace": "vite-node scripts/probar-enlace.ts"
+    "probar-enlace": "vite-node scripts/probar-enlace.ts",
+    "seed-catalogo": "vite-node scripts/generar-seed-catalogo.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",

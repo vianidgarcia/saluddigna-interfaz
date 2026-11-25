@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fechaLarga, hoyISO, isoDia, yaPaso, fmtHora } from '../state/tramite'
 import { Icon } from './Icon'
 
 /* Calendario + horarios. Nunca permite fechas ni horas que ya pasaron.
-   La ocupación es de demostración, estable para cada día y hora. */
+   Dos fuentes de horarios:
+   · demo (por omisión y en modo local): `HORAS` con una ocupación de ejemplo, estable para cada día y hora.
+   · real (modo api, con la prop `consultar`): solo lo que la clínica acepta, pedido a la base por mes.
+     Si la base no responde, o no conoce la clínica, vuelve a la demo y lo avisa (el modo local es el respaldo). */
+
+/** Horarios de la clínica entre dos fechas ('AAAA-MM-DD', inclusive). null = la base no conoce la clínica o el estudio. */
+export type ConsultarHorarios = (desde: string, hasta: string) => Promise<{ fecha: string; hora: string }[] | null>
 
 export const DIAS_MAXIMOS = 90
 export const HORAS = Array.from({ length: 21 }, (_, i) => `${String(8 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`)
@@ -14,19 +20,75 @@ export const ocupado = (fecha: string, hora: string) => {
 }
 /** ¿Se puede reservar este horario? (no pasado y no ocupado) */
 export const disponible = (fecha: string, hora: string) => !yaPaso(fecha, hora) && !ocupado(fecha, hora)
-const hayLugar = (fecha: string) => HORAS.some((h) => disponible(fecha, h))
 
 const MESES = Array.from({ length: 12 }, (_, i) => new Date(2026, i, 1).toLocaleDateString('es-MX', { month: 'long' }))
 const SEMANA: [string, string][] = [['L', 'lunes'], ['M', 'martes'], ['M', 'miércoles'], ['J', 'jueves'], ['V', 'viernes'], ['S', 'sábado'], ['D', 'domingo']]
 const parse = (iso: string) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d) }
 const sumarDias = (iso: string, n: number) => { const d = parse(iso); d.setDate(d.getDate() + n); return isoDia(d) }
 
-export function SelectorHorario({ fecha, hora, onFecha, onHora, id = 'h' }: {
+type Fuente = {
+  /** true = horarios reales de la clínica; false = de demostración */
+  real: boolean
+  cargando: boolean
+  /** por qué se volvió a la demostración (null si no) */
+  aviso: string | null
+  /** horas libres de un día, 'HH:MM' */
+  horasDe: (fecha: string) => string[]
+  /** pide a la base lo que falte entre dos fechas (no hace nada en demo) */
+  asegurar: (desde: string, hasta: string) => void
+}
+
+function useFuente(consultar: ConsultarHorarios | undefined, hoy: string, max: string): Fuente {
+  const [lista, setLista] = useState<Map<string, string[]>>(new Map())
+  const [pendientes, setPendientes] = useState(0)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const pedidos = useRef(new Set<string>())
+  const consultarRef = useRef(consultar)
+  consultarRef.current = consultar
+  const real = !!consultar && !aviso
+
+  const asegurar = useCallback((desde: string, hasta: string) => {
+    const pedir = consultarRef.current
+    if (!pedir) return
+    const d = desde < hoy ? hoy : desde
+    const h = hasta > max ? max : hasta
+    let ini: string | null = null
+    let fin: string | null = null
+    for (let x = d; x <= h; x = sumarDias(x, 1)) if (!pedidos.current.has(x)) { ini ??= x; fin = x }
+    if (!ini || !fin) return
+    const [a, b] = [ini, fin]
+    for (let x = a; x <= b; x = sumarDias(x, 1)) pedidos.current.add(x)
+    setPendientes((n) => n + 1)
+    pedir(a, b)
+      .then((horarios) => {
+        if (horarios === null) { setAviso('Esta clínica todavía no está en el sistema de citas.'); return }
+        setLista((previo) => {
+          const nuevo = new Map(previo)
+          for (let x = a; x <= b; x = sumarDias(x, 1)) nuevo.set(x, [])
+          for (const hh of horarios) nuevo.get(hh.fecha)?.push(hh.hora.slice(0, 5))
+          return nuevo
+        })
+      })
+      .catch(() => setAviso('No pudimos consultar los horarios de la clínica.'))
+      .finally(() => setPendientes((n) => n - 1))
+  }, [hoy, max])
+
+  const horasDe = useCallback((fecha: string) => real
+    ? (lista.get(fecha) ?? []).filter((h) => !yaPaso(fecha, h))
+    : HORAS.filter((h) => disponible(fecha, h)), [real, lista])
+
+  return { real, cargando: real && pendientes > 0, aviso: consultar ? aviso : null, horasDe, asegurar }
+}
+
+export function SelectorHorario({ fecha, hora, onFecha, onHora, id = 'h', consultar }: {
   fecha: string | null; hora: string | null; onFecha: (v: string) => void; onHora: (h: string | null) => void; id?: string
+  /** Modo api: horarios reales de la clínica. Sin esto, horarios de demostración. */
+  consultar?: ConsultarHorarios
 }) {
   const hoy = hoyISO()
   const max = sumarDias(hoy, DIAS_MAXIMOS)
-  const habilitado = (iso: string) => iso >= hoy && iso <= max && hayLugar(iso)
+  const fuente = useFuente(consultar, hoy, max)
+  const habilitado = (iso: string) => iso >= hoy && iso <= max && fuente.horasDe(iso).length > 0
   // fecha guardada que ya pasó: se trata como no elegida
   const fechaValida = fecha && habilitado(fecha) ? fecha : null
   // cuenta los días elegidos por el usuario: solo entonces se lleva la vista a los horarios (no al restaurar)
@@ -35,20 +97,25 @@ export function SelectorHorario({ fecha, hora, onFecha, onHora, id = 'h' }: {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-10">
-      <Calendario id={id} fecha={fechaValida} hoy={hoy} max={max} habilitado={habilitado} onFecha={elegirDia} />
+      <Calendario id={id} fecha={fechaValida} hoy={hoy} max={max} habilitado={habilitado} onFecha={elegirDia} onVista={fuente.asegurar} />
       <div>
         {fechaValida
-          ? <SelectorHora id={id} fecha={fechaValida} hora={hora} onHora={onHora} toques={toques} />
+          ? <SelectorHora id={id} fecha={fechaValida} hora={hora} onHora={onHora} toques={toques} fuente={fuente} />
           : <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">Elige un día en el calendario para ver las horas disponibles.</p>}
-        {fecha && !fechaValida && <p role="status" className="mt-3 t-body text-titulo">La fecha que tenías guardada ya pasó o no tiene lugar. Elige otra.</p>}
+        {fecha && !fechaValida && !fuente.cargando && <p role="status" className="mt-3 t-body text-titulo">La fecha que tenías guardada ya pasó o no tiene lugar. Elige otra.</p>}
+        <p role="status" className="mt-3 t-meta text-secundario empty:hidden">
+          {fuente.cargando ? 'Consultando los horarios de la clínica…' : fuente.aviso ? `${fuente.aviso} Se muestran horarios de demostración.` : null}
+        </p>
       </div>
     </div>
   )
 }
 
 /* ---------- calendario mensual: siempre 6 semanas; solo los días disponibles se pueden elegir ---------- */
-function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
+function Calendario({ id, fecha, hoy, max, habilitado, onFecha, onVista }: {
   id: string; fecha: string | null; hoy: string; max: string; habilitado: (iso: string) => boolean; onFecha: (v: string) => void
+  /** avisa qué días se están viendo (primer y último de la cuadrícula) para pedir sus horarios */
+  onVista: (desde: string, hasta: string) => void
 }) {
   const inicio = parse(fecha ?? hoy)
   const [mes, setMes] = useState({ y: inicio.getFullYear(), m: inicio.getMonth() })
@@ -69,6 +136,8 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
     const celdas = Array.from({ length: 42 }, (_, i) => isoDia(new Date(mes.y, mes.m, 1 - offset + i)))
     return Array.from({ length: 6 }, (_, i) => celdas.slice(i * 7, i * 7 + 7))
   }, [mes])
+
+  useEffect(() => { onVista(semanas[0][0], semanas[5][6]) }, [semanas, onVista])
 
   const enMes = (iso: string) => { const d = parse(iso); return d.getFullYear() === mes.y && d.getMonth() === mes.m }
   const elegible = (iso: string) => enMes(iso) && habilitado(iso)
@@ -155,15 +224,15 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
 }
 
 /* ---------- horario: campo "Hora" que abre una lista desplegable con los horarios libres ---------- */
-function SelectorHora({ id, fecha, hora, onHora, toques }: { id: string; fecha: string; hora: string | null; onHora: (h: string | null) => void; toques: number }) {
-  const elegida = hora && disponible(fecha, hora) ? hora : null
-  // la hora guardada ya no sirve (pasó o se ocupó): se limpia
-  useEffect(() => { if (hora && !elegida) onHora(null) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+function SelectorHora({ id, fecha, hora, onHora, toques, fuente }: { id: string; fecha: string; hora: string | null; onHora: (h: string | null) => void; toques: number; fuente: Fuente }) {
+  const libres = fuente.horasDe(fecha)
+  const elegida = hora && libres.includes(hora) ? hora : null
+  // la hora guardada ya no sirve (pasó, se ocupó o la clínica no la acepta): se limpia, cuando ya se sabe
+  useEffect(() => { if (!fuente.cargando && hora && !elegida) onHora(null) }, [fuente.cargando, hora, elegida]) // eslint-disable-line react-hooks/exhaustive-deps
   const seccion = useRef<HTMLDivElement>(null)
   const campo = useRef<HTMLButtonElement>(null)
   const lista = useRef<HTMLUListElement>(null)
   const [abierta, setAbierta] = useState(false)
-  const libres = HORAS.filter((h) => disponible(fecha, h))
   const [activa, setActiva] = useState(0)
 
   // al tocar un día en el teléfono, el campo de hora queda a la vista (el calendario ocupa la pantalla)
@@ -221,7 +290,7 @@ function SelectorHora({ id, fecha, hora, onHora, toques }: { id: string; fecha: 
     <div ref={seccion} className="scroll-mt-24">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h3 className="t-sub font-bold text-titulo first-letter:uppercase">{fechaLarga(fecha)}</h3>
-        <span className="rounded-full bg-resaltado px-3 py-1 t-meta font-semibold text-titulo">Horarios de demostración</span>
+        <span className="rounded-full bg-resaltado px-3 py-1 t-meta font-semibold text-titulo">{fuente.real ? 'Horarios de la clínica' : 'Horarios de demostración'}</span>
       </div>
       <p className="mt-1 t-meta text-secundario">{libres.length === 1 ? '1 horario disponible' : `${libres.length} horarios disponibles`}.</p>
 

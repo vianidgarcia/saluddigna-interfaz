@@ -95,7 +95,7 @@ export function Asesor() {
 
 /* ---------- ficha del paciente ---------- */
 function Ficha({ t }: { t: Tramite }) {
-  const { update, sesion } = useApp()
+  const { update, sesion, horariosClinica } = useApp()
   const [aviso, setAviso] = useState<string | null>(null)
   const [clinicas, setClinicas] = useState(false)
   const [reagendar, setReagendar] = useState(false)
@@ -203,7 +203,7 @@ function Ficha({ t }: { t: Tramite }) {
                 <div id="reag" className="mt-4 border-t border-borde pt-4">
                   <div className="flex flex-wrap items-center gap-x-3"><p className="t-sub font-bold text-titulo">Nueva fecha y hora</p></div>
                   <div className="mt-2">
-                    <SelectorHorario id="reag" fecha={nf} hora={nh} onFecha={(v) => { if (v !== nf) setNh(null); setNf(v) }} onHora={setNh} />
+                    <SelectorHorario id="reag" key={`${t.clinica}|${t.estudio?.nombre}`} consultar={horariosClinica && t.clinica && t.estudio ? (d, h) => horariosClinica(t.clinica!, t.estudio!.nombre, d, h) : undefined} fecha={nf} hora={nh} onFecha={(v) => { if (v !== nf) setNh(null); setNf(v) }} onHora={setNh} />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button onClick={guardarHorario} disabled={!nf || !nh} aria-describedby={!nf || !nh ? 'reag-h' : undefined}
