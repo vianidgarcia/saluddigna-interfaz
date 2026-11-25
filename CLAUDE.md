@@ -23,12 +23,12 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
   La sincronización entre pestañas sigue usando `loadTramite` para ver la confirmación en vivo.
 - Mis trámites (paciente) NO muestra historial; la línea de tiempo es solo para el asesor.
 - Fecha y hora: `SelectorHorario`. Calendario de 6 semanas fijas: los días de otros meses y los días sin lugar se
-  ven atenuados y no se pueden elegir; solo los días disponibles son botones. Horarios: los libres a la vista,
-  en dos columnas (Mañana a la izquierda, Tarde a la derecha), un toque para elegir; el cartel "Tu cita" va debajo
-  de ambas. En teléfono, al tocar un día la vista baja a los horarios.
+  ven atenuados y no se pueden elegir; solo los días disponibles son botones. Horarios: campo "Hora de la cita" que
+  abre una LISTA desplegable (role="listbox") con los horarios libres uno debajo de otro (~5 visibles, con scroll
+  propio); al elegir se cierra; teclado: flechas, Inicio/Fin, Enter, Escape. El cartel "Tu cita" va debajo del campo.
+  La opción activa se desplaza dentro de la lista (no la página). En teléfono, al tocar un día la vista baja al campo.
   Nunca permite fechas u horas pasadas (`yaPaso`). La hora se GUARDA en 24 h ("13:30") y se MUESTRA en 12 h con AM/PM
-  ("01:30 PM") con `fmtHora` en todos lados (horarios, resumen, tarjeta, asesor, pagos, PDF). El paso 3 usa max-w-4xl
-  para que el calendario conserve días de 48 px junto a las dos columnas de horarios.
+  ("01:30 PM") con `fmtHora` en todos lados (horarios, resumen, tarjeta, asesor, pagos, PDF).
 - Clínicas: `data/clinicasData.ts` (GENERADO: 261 sucursales reales de las páginas públicas de salud-digna.org, con
   estado, ciudad, dirección, teléfono, coordenadas y horario; no editar a mano ni inventar clínicas) y
   `data/clinics.ts` (búsqueda y distancias). `components/BuscadorClinica`: estado, ciudad, sucursal y
