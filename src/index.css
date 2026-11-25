@@ -28,6 +28,10 @@
   --color-verde: #006D3D;
   --color-error: #B3261E;
   --color-foco: #0074D9;
+  /* logo oficial */
+  --color-logo-verde: #008959;
+  --color-logo-gris: #868589;
+  --color-logo-gris-2: #808082;
 }
 
 /* Modo oscuro: lo activa data-tema="oscuro" en <html> (lo fija index.html antes de pintar, según la elección
@@ -53,6 +57,9 @@
   --color-verde: #5FD89C;
   --color-error: #FF8A80;
   --color-foco: #8EC5FF;
+  --color-logo-verde: #3FC48A;
+  --color-logo-gris: #C2C1C6;
+  --color-logo-gris-2: #BDBCC0;
 }
 :root { color-scheme: light; }
 

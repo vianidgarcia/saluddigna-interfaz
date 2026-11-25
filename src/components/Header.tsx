@@ -3,21 +3,16 @@ import { ROL, type Rol } from '../state/sesion'
 import { useApp } from '../context'
 import type { Clinic } from '../data/clinics'
 import { Icon } from './Icon'
+import { LogoSaludDigna } from './LogoSaludDigna'
 import { BotonTema } from './Tema'
 import { container } from './ui'
 
 // "Clínicas" se quitó del menú: la abre el selector de clínica (y "Clínicas" en la barra inferior del teléfono)
 const NAV = ['Servicios', 'Paquetes', 'Resultados']
 
-export function Logo() {
-  return (
-    <svg width="144" height="36" viewBox="0 0 144 36" role="img" aria-label="Salud Digna" className="text-titulo">
-      <text x="0" y="21" fill="#008B50" fontWeight="700" fontSize="20" fontFamily="Open Sans, sans-serif">Salud</text>
-      <text x="55" y="21" fill="currentColor" fontWeight="700" fontSize="20" fontFamily="Open Sans, sans-serif">Digna</text>
-      <circle cx="114" cy="19" r="2" fill="#008B50" />
-      <text x="0" y="33" fill="#008B50" fontWeight="600" fontSize="9.5" fontFamily="Open Sans, sans-serif">La salud es para todos</text>
-    </svg>
-  )
+/** Logo oficial (ver LogoSaludDigna). 28 px de alto en teléfono (≈132 px) y 32 px desde 640 px (≈151 px), para que el encabezado quepa. */
+export function Logo({ className = 'h-7 w-auto sm:h-8' }: { className?: string }) {
+  return <LogoSaludDigna className={className} />
 }
 
 /* ---------- header ---------- */
@@ -92,7 +87,7 @@ function MenuEntrar() {
   return (
     <div ref={ref} className="relative">
       <button ref={btn} onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={open ? 'menu-entrar' : undefined}
-        className="inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-lg border border-borde-accion bg-superficie px-4 text-base font-semibold text-enlace transition-colors hover:bg-resaltado active:bg-resaltado-2">
+        className="inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-lg border border-borde-accion bg-superficie px-3 sm:px-4 text-base font-semibold text-enlace transition-colors hover:bg-resaltado active:bg-resaltado-2">
         <Icon n="user" /><span className="xl:hidden">Entrar</span><span className="hidden xl:inline">Iniciar sesión</span><Icon n="left" size={16} className={`transition-transform ${open ? 'rotate-90' : '-rotate-90'}`} />
       </button>
       {open && (
