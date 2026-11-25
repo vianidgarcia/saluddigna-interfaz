@@ -40,6 +40,14 @@ export function MapaClinicas({ clinicas, elegida, ubicacion, onElegir, alto = 'h
     m.fitBounds(MEXICO)
     capa.current = L.layerGroup().addTo(m)
     mapa.current = m
+    // rueda del ratón: hace zoom solo después de hacer clic en el mapa (o enfocarlo con el teclado) y se apaga al
+    // salir del mapa; así la rueda no queda "atrapada" al desplazar la página o la lista
+    const activarRueda = () => m.scrollWheelZoom.enable()
+    const apagarRueda = () => m.scrollWheelZoom.disable()
+    m.on('click focus', activarRueda)
+    m.on('blur', apagarRueda)
+    const contenedor = div.current
+    contenedor.addEventListener('mouseleave', apagarRueda)
     // el contenedor puede cambiar de tamaño (panel lateral, rotación del teléfono)
     let oculto = div.current.clientWidth === 0
     const ro = new ResizeObserver(() => {
@@ -49,7 +57,7 @@ export function MapaClinicas({ clinicas, elegida, ubicacion, onElegir, alto = 'h
       oculto = ahora
     })
     ro.observe(div.current)
-    return () => { ro.disconnect(); m.stop(); m.off(); m.remove(); mapa.current = null; capa.current = null }
+    return () => { ro.disconnect(); contenedor.removeEventListener('mouseleave', apagarRueda); m.stop(); m.off(); m.remove(); mapa.current = null; capa.current = null }
   }, [])
 
   // dibujar puntos y encuadrar cada vez que cambian los resultados
@@ -106,7 +114,8 @@ export function MapaClinicas({ clinicas, elegida, ubicacion, onElegir, alto = 'h
       <div ref={div} role="region" aria-label={`Mapa con ${clinicas.length} clínicas. También puedes elegir en la lista.`}
         className={`isolate z-0 w-full overflow-hidden rounded-lg border border-borde bg-banda ${alto}`} />
       <figcaption className="mt-1 t-meta text-secundario">
-        Toca un punto para elegir la clínica. {clinicas.length === 1 ? '1 clínica en el mapa.' : `${clinicas.length} clínicas en el mapa.`}
+        Toca un punto para elegir la clínica. {clinicas.length === 1 ? '1 clínica en el mapa.' : `${clinicas.length} clínicas en el mapa.`}{' '}
+        Para acercar: botones + y −, pellizco en el teléfono, o haz clic en el mapa y usa la rueda del ratón.
       </figcaption>
       <p role="status" className="mt-1 t-body text-titulo empty:hidden">
         {sel && <><span className="font-semibold">Elegiste:</span> {sel.name} · {sel.ciudad}, {sel.estado}</>}

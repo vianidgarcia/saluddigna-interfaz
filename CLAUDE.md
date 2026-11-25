@@ -50,10 +50,13 @@ el enlace completo y lo que falta**; lo imprescindible al tocar código:
   Sin paginar: la lista muestra todas las coincidencias del filtro y SOLO esas (no se fija la clínica elegida).
   Paso 2: "Aún no lo decido" arriba a la derecha; escritorio: lista agrupada por ciudad (con su propio scroll) junto
   al mapa; teléfono: conmutador Lista / Mapa. Lo usan el paso 2 del agendado y `ClinicSheet` (también el asesor).
+  `ClinicSheet` (panel lateral): encabezado fijo y UN solo scroll (filtros compactos + conmutador Lista / Mapa en todo
+  ancho), para que el mapa nunca se encime a la lista.
 - Mapa: `components/MapaClinicas` (Leaflet + mosaicos de OpenStreetMap, sin clave; atribución obligatoria) muestra todas
   las coincidencias del buscador; tocar un punto elige la clínica. Se carga diferido con `MapaDiferido` (no pesa en el
   inicio) y, si no se puede descargar, avisa y la lista sigue funcionando. Sin animaciones de zoom/encuadre: Leaflet
-  falla si se desmonta a mitad de una animación. En pruebas automatizadas, `tile.openstreetmap.org` se sirve con una imagen vacía.
+  falla si se desmonta a mitad de una animación. La rueda del ratón NO hace zoom hasta hacer clic o enfocar el mapa (así la rueda
+  desplaza la página/lista); se apaga al salir el puntero o perder el foco. En pruebas automatizadas, `tile.openstreetmap.org` se sirve con una imagen vacía.
 - `src/components/`: piezas de interfaz (Header, StaffHeader, Cookies, ContinueCard, Search, Packages, Help, Footer, BottomNav, ClinicSheet, BuscadorClinica, MapaClinicas, MapaDiferido, SelectorHorario, Pwa, Tema, Icon, ui).
 - `src/views/`: Entrar, Home, Agendar, Pay, Tramites, Resultados, Asesor (también la usa Administrador).
 - `src/data/`: clinics, studies, packages.

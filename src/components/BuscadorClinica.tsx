@@ -57,7 +57,9 @@ export type Buscador = ReturnType<typeof useBuscadorClinica>
 
 const select = 'h-12 w-full appearance-none rounded-lg border border-borde bg-superficie pl-4 pr-10 text-base text-titulo transition-colors hover:border-borde-accion'
 
-export function FiltrosClinica({ b, id, inputRef }: { b: Buscador; id: string; inputRef?: RefObject<HTMLInputElement | null> }) {
+/** `compacto`: para espacios angostos (panel lateral): estado y ciudad en dos columnas, sucursal a todo el ancho,
+    sin importar el ancho de la pantalla. */
+export function FiltrosClinica({ b, id, inputRef, compacto = false }: { b: Buscador; id: string; inputRef?: RefObject<HTMLInputElement | null>; compacto?: boolean }) {
   const ciudades = ciudadesDe(b.estado)
   return (
     <div>
@@ -68,7 +70,7 @@ export function FiltrosClinica({ b, id, inputRef }: { b: Buscador; id: string; i
         </button>
         <p className="t-meta text-secundario">o busca por estado, ciudad o sucursal</p>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={`mt-4 grid gap-3 ${compacto ? 'grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
         <div>
           <label htmlFor={`${id}-estado`} className="text-base font-semibold text-titulo">Estado</label>
           <div className="relative mt-2">
@@ -89,7 +91,7 @@ export function FiltrosClinica({ b, id, inputRef }: { b: Buscador; id: string; i
             <Icon n="left" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 text-secundario" />
           </div>
         </div>
-        <div className="sm:col-span-2 lg:col-span-1">
+        <div className={compacto ? 'col-span-2' : 'sm:col-span-2 lg:col-span-1'}>
           <label htmlFor={`${id}-q`} className="text-base font-semibold text-titulo">Sucursal</label>
           <div className="relative mt-2">
             <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secundario" />
