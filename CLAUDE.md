@@ -7,7 +7,19 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 
 ## Comandos
 - `npm install` · `npm run dev` · `npm run build` (debe pasar sin errores antes de terminar cualquier tarea)
-- `npx tsc --noEmit` para revisar tipos (`vite build` no los revisa).
+- `npm run tipos` (`tsc --noEmit`) para revisar tipos (`vite build` no los revisa).
+- `npm run probar` para las pruebas de `src/api/` (no necesitan base de datos).
+
+## Dos modos: local y api (ver CONEXION.md)
+El portal corre con datos simulados (`VITE_MODO=local`, por omisión) o conectado al orquestador
+omnicanal en Supabase (`VITE_MODO=api`, repo `eduardomv2/hackathon-puebla`). **CONEXION.md explica
+el enlace completo y lo que falta**; lo imprescindible al tocar código:
+- `src/api/api.ts` y `src/api/database.types.ts` son COPIAS del backend: no editarlos aquí.
+- Para saber el modo, importar `./api/modo`, NUNCA `./api/cliente`: `cliente.ts` arrastra Supabase
+  (~66 kB comprimidos) y debe quedar en su trozo diferido. Revisar el tamaño de `index-*.js`.
+- El trámite de `src/state/tramite.ts` sigue siendo la fuente de la interfaz. Toda la escritura
+  pasa por `commit` en `App.tsx`: ese es el único punto de enganche con el orquestador.
+- El modo `local` no debe romperse nunca: es el respaldo si el backend falla en la presentación.
 
 ## Estructura
 - `src/App.tsx`: estado global (sesión del personal, vista, clínica, trámite) y contexto `useApp`.

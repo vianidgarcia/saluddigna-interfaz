@@ -1,10 +1,14 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react'
 import { useApp } from '../context'
 import { Icon } from '../components/Icon'
 import { ClinicSheet } from '../components/ClinicSheet'
 import { BotonComprobante } from '../components/BotonComprobante'
 import { SelectorHorario } from '../components/SelectorHorario'
 import { container, link, outlineBtn, solidBtn } from '../components/ui'
+import { esApi } from '../api/modo'
+
+/* Diferida: solo el personal en modo api la necesita, así no pesa en el arranque del portal. */
+const BandejaOmnicanal = lazy(() => import('../components/BandejaOmnicanal').then((m) => ({ default: m.BandejaOmnicanal })))
 import { CLINICA_INICIAL, findClinic } from '../data/clinics'
 import {
   CANAL, ICONO_CANAL, METODO, PASOS, TIPO_EVENTO, TICK_MS, avance, conEvento, conNota, esNotaInterna,
@@ -46,8 +50,16 @@ export function Asesor() {
       <h1 className="t-greeting font-head text-titulo">Atención al paciente</h1>
       <p className="mt-2 max-w-3xl t-body">Busca al paciente y retoma su trámite con todo lo que ya hizo en web, WhatsApp o Call Center, sin volver a pedirle sus datos.</p>
 
+      {esApi && (
+        <Suspense fallback={<p role="status" className="mt-8 t-body text-secundario">Cargando la bandeja omnicanal…</p>}>
+          <BandejaOmnicanal />
+        </Suspense>
+      )}
+
       <section className="mt-6 max-w-3xl">
-        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-titulo">Buscar por folio, nombre o teléfono del paciente</label>
+        <h2 className="t-section font-head text-titulo">{esApi ? 'Trámite de este dispositivo' : 'Buscar paciente'}</h2>
+        {esApi && <p className="mt-1 t-body">Solo el trámite abierto en este navegador. Para los de otros canales usa la bandeja de arriba.</p>}
+        <label id="buscar-l" htmlFor="buscar" className="mt-4 block text-base font-semibold text-titulo">Buscar por folio, nombre o teléfono del paciente</label>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secundario" />

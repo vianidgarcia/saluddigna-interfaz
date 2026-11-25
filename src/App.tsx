@@ -18,6 +18,9 @@ import { AvisoConexion, BotonInstalar } from './components/Pwa'
 import { BotonTema } from './components/Tema'
 import { loadSesion, saveSesion, type Rol, type Sesion } from './state/sesion'
 import { loadTramiteAlAbrir, METODO, PASOS, STORAGE_KEY, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
+import { esApi } from './api/modo'
+import { useOrquestador } from './api/useOrquestador'
+import { VerificarCelular } from './components/VerificarCelular'
 
 const VIEW_KEY = 'sd_vista'
 const COOKIES_KEY = 'sd_cookies'
@@ -45,6 +48,8 @@ export default function App() {
   // Otra pestaña (p. ej. el Asesor) cambió el trámite: se refleja aquí sin recargar.
   // La sesión NO se sincroniza: cada pestaña conserva su propio rol.
   useEffect(() => {
+    // En modo api esto lo hace Realtime (y además ve los otros canales, no solo las otras pestañas).
+    if (esApi) return
     const onStorage = (e: StorageEvent) => {
       if (e.key !== null && e.key !== STORAGE_KEY) return
       const t = loadTramite()
@@ -81,9 +86,37 @@ export default function App() {
     setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 50)
   }
 
-  /* ---- orquestador simulado ---- */
-  const commit = (t: Tramite | null) => { tRef.current = t; setTramite(t); saveTramite(t) }
+  /* ---- orquestador ----
+     En modo local todo esto queda en localStorage, como antes. En modo api el trámite se espeja en
+     la base: el folio, la cita y el pago pasan a ser los mismos que ven WhatsApp y el call center. */
+  const guardar = (t: Tramite | null) => { tRef.current = t; setTramite(t); saveTramite(t) }
+  // lo que llega de otro canal ya viene fusionado: se guarda sin volver a empujarlo a la base
+  const orq = useOrquestador(tRef, guardar)
+  // trámite esperando a que el paciente confirme su celular (solo modo api)
+  const [porVerificar, setPorVerificar] = useState<{ t: Tramite; telefono: string } | null>(null)
+
+  /** Manda a la base el trámite ya confirmado por el paciente. */
+  const empujar = (t: Tramite) => {
+    void orq.confirmar(t).then((p) => { if (p.necesitaOtp) setPorVerificar({ t, telefono: p.telefono }) })
+  }
+
+  const commit = (t: Tramite | null) => {
+    const antes = tRef.current
+    guardar(t)
+    // El trámite se crea en la base cuando el paciente confirma: antes de eso no hay datos
+    // suficientes (la base exige nombre, apellido y celular verificado).
+    if (!esApi || !t) return
+    const cerrado = t.estado === 'confirmada' || t.estado === 'pago_pendiente'
+    if (cerrado && antes?.estado !== t.estado) empujar(t)
+  }
   const update = (fn: (t: Tramite) => Tramite) => { if (tRef.current) commit(fn(tRef.current)) }
+
+  // Un problema con el orquestador se avisa y no detiene el flujo: la demostración sigue en local.
+  useEffect(() => {
+    if (!orq.aviso) return
+    toast(orq.aviso)
+    orq.limpiarAviso()
+  }, [orq.aviso])
 
   const startAgendar = (estudio?: EstudioElegido) => {
     let t = tRef.current
@@ -116,6 +149,7 @@ export default function App() {
   }
 
   const reiniciarDemo = () => {
+    void orq.reiniciar()
     commit(null)
     go('home')
     toast('Demo reiniciada: no hay trámites en curso')
@@ -189,6 +223,11 @@ export default function App() {
         <Footer />
         <BottomNav view={activeView} />
         {sheet && <ClinicSheet current={clinic} onSelect={setClinic} onClose={() => setSheet(false)} />}
+        {porVerificar && (
+          <VerificarCelular telefono={porVerificar.telefono} pedirCodigo={orq.pedirCodigo} confirmarCodigo={orq.confirmarCodigo}
+            onVerificado={() => { const t = porVerificar.t; setPorVerificar(null); empujar(t) }}
+            onCancelar={() => { setPorVerificar(null); toast('Tu cita quedó guardada en este dispositivo. Confirma tu celular para verla también en WhatsApp.') }} />
+        )}
         {toastEl}
       </div>
     </Ctx.Provider>

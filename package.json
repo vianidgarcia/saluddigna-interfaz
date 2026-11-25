@@ -7,9 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "preview:pwa": "vite build && vite preview --host"
+    "preview:pwa": "vite build && vite preview --host",
+    "probar": "node --test --experimental-strip-types \"src/**/*.test.ts\"",
+    "tipos": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "react": "^19.0.0",
