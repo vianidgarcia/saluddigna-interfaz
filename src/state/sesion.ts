@@ -25,9 +25,17 @@ const parse = (raw: string | null): Sesion | null => {
   }
 }
 
+/** Marca de pestaña que se usa SIN sesión (portal del paciente): al recargarla no hereda la sesión del personal
+    abierta en otra pestaña. Una pestaña nueva, sin marca, sí hereda la última sesión guardada. */
+const SIN_SESION = 'ninguna'
+
 export function loadSesion(): Sesion | null {
   try {
-    return parse(window.sessionStorage.getItem(SESION_TAB_KEY)) ?? parse(window.localStorage.getItem(SESION_KEY))
+    const pestana = window.sessionStorage.getItem(SESION_TAB_KEY)
+    if (pestana === SIN_SESION) return null
+    const s = parse(pestana) ?? parse(window.localStorage.getItem(SESION_KEY))
+    if (!s) window.sessionStorage.setItem(SESION_TAB_KEY, SIN_SESION)
+    return s
   } catch {
     return null
   }
@@ -41,7 +49,7 @@ export function saveSesion(s: Sesion | null) {
       window.sessionStorage.setItem(SESION_TAB_KEY, raw)
     } else {
       window.localStorage.removeItem(SESION_KEY)
-      window.sessionStorage.removeItem(SESION_TAB_KEY)
+      window.sessionStorage.setItem(SESION_TAB_KEY, SIN_SESION)
     }
   } catch {
     /* sin almacenamiento: la sesión vive solo en memoria */

@@ -17,7 +17,7 @@ import { StaffHeader } from './components/StaffHeader'
 import { AvisoConexion, BotonInstalar } from './components/Pwa'
 import { BotonTema } from './components/Tema'
 import { loadSesion, saveSesion, type Rol, type Sesion } from './state/sesion'
-import { METODO, PASOS, STORAGE_KEY, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
+import { loadTramiteAlAbrir, METODO, PASOS, STORAGE_KEY, conEvento, loadTramite, nuevoTramite, saveTramite, type Tramite } from './state/tramite'
 
 const VIEW_KEY = 'sd_vista'
 const COOKIES_KEY = 'sd_cookies'
@@ -36,7 +36,7 @@ function loadView(t: Tramite | null): View {
 }
 
 export default function App() {
-  const [tramite, setTramite] = useState<Tramite | null>(loadTramite)
+  const [tramite, setTramite] = useState<Tramite | null>(loadTramiteAlAbrir)
   const tRef = useRef(tramite)
   const [sesion, setSesion] = useState<Sesion | null>(loadSesion)
   // pantalla Entrar (solo personal: asesor o administrador), abierta desde la esquina superior derecha

@@ -6,11 +6,11 @@ import { BotonComprobante } from '../components/BotonComprobante'
 import { Icon } from '../components/Icon'
 import { CHIPS, STUDIES } from '../data/studies'
 import { findClinic } from '../data/clinics'
-import { FiltrosClinica, MasClinicas, fmtKm, useBuscadorClinica } from '../components/BuscadorClinica'
+import { FiltrosClinica, fmtKm, useBuscadorClinica } from '../components/BuscadorClinica'
 import { MapaClinicasDiferido as MapaClinicas } from '../components/MapaDiferido'
 import { NB, WA, container, chip, link, outlineBtn, solidBtn } from '../components/ui'
 import {
-  LISTA_PASOS, METODO, PASOS, TOTAL_PASOS, avance, conEvento, fechaLarga, pasoCompleto, yaPaso,
+  LISTA_PASOS, METODO, PASOS, TOTAL_PASOS, avance, conEvento, fmtTelefono, fechaLarga, pasoCompleto, yaPaso,
   type MetodoPago, type Paso, type Tramite,
 } from '../state/tramite'
 
@@ -73,6 +73,7 @@ function Flujo({ t }: { t: Tramite }) {
     falta = !t.clinica ? 'Elige una clínica para confirmar tu cita (toca “Cambiar” en Clínica).'
       : !t.fecha || !t.hora || yaPaso(t.fecha, t.hora) ? 'La fecha u hora de tu cita ya pasó: toca “Cambiar” en Fecha y hora.'
         : !t.paciente.nombre?.trim() ? 'Escribe a nombre de quién es la cita para continuar.'
+          : (t.paciente.telefono ?? '').length !== 10 ? 'Escribe un teléfono de 10 dígitos para continuar.'
           : !t.metodoPago ? 'Elige cómo quieres pagar para continuar.' : null
   }
 
@@ -104,7 +105,7 @@ function Flujo({ t }: { t: Tramite }) {
       <Back />
       <h1 className="mt-2 t-section font-head text-titulo lg:mt-4">Agendar cita</h1>
       <Progreso paso={paso} />
-      <div className="mt-6 max-w-3xl lg:mt-8">
+      <div className={`mt-6 lg:mt-8 ${paso === 2 ? '' : 'max-w-3xl'}`}>
         <h2 ref={headRef} tabIndex={-1} data-focus-target className="t-card font-head text-titulo">
           <span className="sr-only">Paso {paso} de {TOTAL_PASOS}: </span>{PREGUNTA[paso]}
         </h2>
@@ -186,43 +187,92 @@ function PasoEstudio({ t }: { t: Tramite }) {
 function PasoClinica({ t }: { t: Tramite }) {
   const { update } = useApp()
   const b = useBuscadorClinica()
-  const elegida = findClinic(t.clinica)
-  // la clínica ya elegida se mantiene visible aunque los filtros no la incluyan
-  const filas = elegida && !b.resultados.some((r) => r.c.name === elegida.name) ? [{ c: elegida, km: undefined }, ...b.resultados] : b.resultados
+  const [vista, setVista] = useState<'lista' | 'mapa'>('lista')
+  const panel = useRef<HTMLDivElement>(null)
+  const elegir = (nombre: string) => update((x) => ({ ...x, clinica: nombre, clinicaPendiente: false }))
   const masCercana = b.ubicacion ? b.resultados[0]?.c.name : null
+
+  // sin ubicación: agrupadas por ciudad (ya vienen ordenadas por estado, ciudad y nombre); con ubicación: por distancia
+  const grupos: [string | null, typeof b.resultados][] = []
+  if (b.ubicacion) grupos.push([null, b.resultados])
+  else for (const r of b.resultados) {
+    const k = `${r.c.ciudad}, ${r.c.estado}`
+    const g = grupos[grupos.length - 1]
+    if (g && g[0] === k) g[1].push(r); else grupos.push([k, [r]])
+  }
+
+  // al elegir desde el mapa, la lista se desplaza hasta esa clínica (solo dentro de su panel, sin mover la página)
+  useEffect(() => {
+    const p = panel.current
+    const el = t.clinica ? p?.querySelector<HTMLElement>(`[data-clinica="${CSS.escape(t.clinica)}"]`) : null
+    if (!p || !el || p.scrollHeight <= p.clientHeight) return
+    if (el.offsetTop < p.scrollTop || el.offsetTop + el.offsetHeight > p.scrollTop + p.clientHeight) p.scrollTop = el.offsetTop - 48
+  }, [t.clinica])
+
+  const tab = (on: boolean) => `inline-flex min-h-12 items-center justify-center gap-2 text-base font-semibold transition-colors ${on ? 'bg-accion-hover text-white' : 'bg-superficie text-enlace hover:bg-resaltado'}`
+
   return (
     <>
       <FiltrosClinica b={b} id="pc" />
-      <div className="mt-4">
-        <MapaClinicas clinicas={b.enMapa.map((r) => r.c)} elegida={t.clinica} ubicacion={b.ubicacion}
-          onElegir={(c) => update((x) => ({ ...x, clinica: c.name, clinicaPendiente: false }))} />
-      </div>
       <fieldset className="mt-6">
-        <legend className="text-base font-semibold text-titulo">Elige una clínica</legend>
-        <div className="mt-2 flex flex-col gap-2">
-          {filas.map(({ c, km }) => (
-            <label key={c.name} className={`${optionRow} border-borde hover:border-borde-accion`}>
-              <input type="radio" name="clinica" className={radio} checked={t.clinica === c.name}
-                onChange={() => update((x) => ({ ...x, clinica: c.name, clinicaPendiente: false }))} />
-              <span className="min-w-0">
-                <span className="block text-base font-semibold text-titulo">{c.name}</span>
-                {c.name === masCercana && <span className="block t-meta font-semibold text-enlace">Más cercana</span>}
-                <span className="block t-meta text-secundario">{c.ciudad}, {c.estado}{km !== undefined && <> · {fmtKm(km)}</>}</span>
-                <span className="block t-meta text-cuerpo">{c.address}</span>
-                {(c.phone || c.horario) && <span className="block t-meta text-secundario">{c.phone && <>Tel.{NB}{c.phone}</>}{c.phone && c.horario && ' · '}{c.horario}</span>}
-              </span>
-            </label>
-          ))}
-          {b.activo && !b.total && <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">No encontramos clínicas con esos filtros. Prueba con otra ciudad o toca “Limpiar filtros”.</p>}
-          <MasClinicas b={b} />
-          <label className={`${optionRow} border-dashed border-borde hover:border-borde-accion`}>
-            <input type="radio" name="clinica" className={radio} checked={t.clinicaPendiente}
+        <legend className="sr-only">Elige una clínica</legend>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p aria-hidden="true" className="t-sub font-bold text-titulo">Elige una clínica</p>
+          <label className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-full border border-dashed border-borde px-4 text-base text-titulo transition-colors hover:border-borde-accion has-[:checked]:border-solid has-[:checked]:border-enlace has-[:checked]:bg-resaltado">
+            <input type="radio" name="clinica" className="size-5 accent-accion-hover" checked={t.clinicaPendiente}
               onChange={() => update((x) => ({ ...x, clinica: null, clinicaPendiente: true }))} />
-            <span>
-              <span className="block text-base font-semibold text-titulo">Aún no lo decido</span>
-              <span className="block t-meta text-secundario">Puedes seguir y elegirla antes de confirmar tu cita.</span>
-            </span>
+            Aún no lo decido
           </label>
+        </div>
+        {t.clinicaPendiente && <p className="mt-1 t-meta text-secundario">Puedes seguir y elegirla antes de confirmar tu cita.</p>}
+
+        {/* teléfono: lista o mapa; escritorio: los dos lado a lado */}
+        <div role="group" aria-label="Ver clínicas como" className="mt-3 grid grid-cols-2 overflow-hidden rounded-lg border border-borde-accion lg:hidden">
+          <button onClick={() => setVista('lista')} aria-pressed={vista === 'lista'} className={tab(vista === 'lista')}><Icon n="menu" size={18} />Lista</button>
+          <button onClick={() => setVista('mapa')} aria-pressed={vista === 'mapa'} className={tab(vista === 'mapa')}><Icon n="pin" size={18} />Mapa</button>
+        </div>
+
+        <div className="mt-3 lg:grid lg:grid-cols-2 lg:gap-6">
+          <div className={vista === 'lista' ? '' : 'hidden lg:block'}>
+            <div ref={panel} className="relative lg:h-[30rem] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-borde lg:p-2">
+              {!b.activo && (
+                <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">Usa tu ubicación o elige un estado para ver la lista. También puedes tocar un punto en el mapa.</p>
+              )}
+              {b.activo && !b.total && (
+                <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">No encontramos clínicas con esos filtros. Prueba con otra ciudad o toca “Limpiar filtros”.</p>
+              )}
+              {grupos.map(([titulo, filas]) => (
+                <div key={titulo ?? 'cercanas'} role="group" aria-label={titulo ?? 'Clínicas cercanas'} className="mb-3 last:mb-0">
+                  {titulo && (
+                    <p className="sticky top-0 z-[1] -mx-2 bg-superficie px-2 pb-1 pt-1 t-meta font-semibold text-secundario">
+                      {titulo} · {filas.length === 1 ? '1 clínica' : `${filas.length} clínicas`}
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    {filas.map(({ c, km }) => (
+                      <label key={c.name} data-clinica={c.name} className={`${optionRow} border-borde hover:border-borde-accion`}>
+                        <input type="radio" name="clinica" className={radio} checked={t.clinica === c.name} onChange={() => elegir(c.name)} />
+                        <span className="min-w-0">
+                          <span className="flex flex-wrap items-baseline gap-x-2">
+                            <span className="text-base font-semibold text-titulo">{c.name}</span>
+                            {km !== undefined && <span className="t-meta text-secundario">{fmtKm(km)}</span>}
+                            {c.name === masCercana && <span className="t-meta font-semibold text-enlace">Más cercana</span>}
+                          </span>
+                          {b.ubicacion && <span className="block t-meta text-secundario">{c.ciudad}, {c.estado}</span>}
+                          <span className="block t-meta text-cuerpo">{c.address}</span>
+                          {(c.phone || c.horario) && <span className="block t-meta text-secundario">{c.phone && <>Tel.{NB}{c.phone}</>}{c.phone && c.horario && ' · '}{c.horario}</span>}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className={vista === 'mapa' ? '' : 'hidden lg:block'}>
+            <MapaClinicas alto="h-80 lg:h-[30rem]" clinicas={b.enMapa.map((r) => r.c)} elegida={t.clinica} ubicacion={b.ubicacion}
+              onElegir={(c) => elegir(c.name)} />
+          </div>
         </div>
       </fieldset>
     </>
@@ -269,17 +319,41 @@ function Resumen({ t, onCambiar }: { t: Tramite; onCambiar?: (p: Paso) => void }
   )
 }
 
+/** Teléfono de contacto: 10 dígitos, con formato al escribir; el error aparece al salir del campo. */
+function CampoTelefono({ valor, onCambio }: { valor: string | null; onCambio: (tel: string) => void }) {
+  const [tocado, setTocado] = useState(false)
+  const digitos = (valor ?? '').replace(/\D/g, '')
+  const error = tocado && digitos.length > 0 && digitos.length !== 10 ? `El teléfono debe tener 10 dígitos; llevas ${digitos.length}.` : null
+  return (
+    <div>
+      <label htmlFor="tel-paciente" className="text-base font-semibold text-titulo">Teléfono celular</label>
+      <input id="tel-paciente" type="tel" inputMode="numeric" autoComplete="tel-national" value={fmtTelefono(digitos) || digitos}
+        onChange={(e) => onCambio(e.target.value.replace(/\D/g, '').slice(0, 10))} onBlur={() => setTocado(true)}
+        aria-invalid={!!error} aria-describedby={error ? 'tel-h tel-e' : 'tel-h'} placeholder="10 dígitos, ej. 667 123 4567"
+        className="mt-2 h-12 w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion aria-[invalid=true]:border-2 aria-[invalid=true]:border-error" />
+      <p id="tel-h" className="mt-1 t-meta text-secundario">Para avisarte de cambios en tu cita.</p>
+      {error && <p id="tel-e" className="mt-1 flex items-start gap-2 t-meta font-semibold text-error"><Icon n="alert" size={18} className="mt-px" />{error}</p>}
+    </div>
+  )
+}
+
 function PasoPago({ t, onCambiar }: { t: Tramite; onCambiar: (p: Paso) => void }) {
   const { update } = useApp()
   return (
     <>
-      <div className="mb-8">
-        <label htmlFor="nombre-paciente" className="text-base font-semibold text-titulo">¿A nombre de quién es la cita?</label>
-        <p id="nombre-h" className="t-meta text-secundario">No necesitas cuenta. Con este nombre y tu folio te atendemos en la clínica, por WhatsApp o en el Call Center.</p>
-        <input id="nombre-paciente" autoComplete="name" value={t.paciente.nombre ?? ''} aria-describedby="nombre-h"
-          onChange={(e) => update((x) => ({ ...x, paciente: { ...x.paciente, nombre: e.target.value } }))}
-          placeholder="Nombre y apellidos" className="mt-2 h-12 w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion sm:max-w-md" />
-      </div>
+      <fieldset className="mb-8">
+        <legend className="t-sub font-bold text-titulo">Datos del paciente</legend>
+        <p id="datos-h" className="t-meta text-secundario">No necesitas cuenta. Con estos datos y tu folio te atendemos en la clínica, por WhatsApp o en el Call Center.</p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="nombre-paciente" className="text-base font-semibold text-titulo">¿A nombre de quién es la cita?</label>
+            <input id="nombre-paciente" autoComplete="name" value={t.paciente.nombre ?? ''} aria-describedby="datos-h"
+              onChange={(e) => update((x) => ({ ...x, paciente: { ...x.paciente, nombre: e.target.value } }))}
+              placeholder="Nombre y apellidos" className="mt-2 h-12 w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion" />
+          </div>
+          <CampoTelefono valor={t.paciente.telefono} onCambio={(tel) => update((x) => ({ ...x, paciente: { ...x.paciente, telefono: tel } }))} />
+        </div>
+      </fieldset>
       <section aria-labelledby="res-t" className="rounded-2xl border border-borde bg-superficie p-6">
         <h3 id="res-t" className="t-sub font-bold text-titulo">Resumen de tu cita</h3>
         <div className="mt-4"><Resumen t={t} onCambiar={onCambiar} /></div>
@@ -325,7 +399,7 @@ function Confirmada({ t }: { t: Tramite }) {
               {t.pago?.estado === 'aprobado' && <span className="block t-meta font-normal text-secundario">
                 Aprobado{t.pago.tarjeta && ` · ${t.pago.tarjeta.marca} •••• ${t.pago.tarjeta.ultimos4}`}{t.pago.autorizacion && ` · Autorización ${t.pago.autorizacion} (de ejemplo)`}
               </span>}</dd></div>
-            {t.paciente.nombre && <div><dt className="t-meta text-secundario">A nombre de</dt><dd className="t-body font-semibold text-titulo">{t.paciente.nombre}</dd></div>}
+            {t.paciente.nombre && <div><dt className="t-meta text-secundario">A nombre de</dt><dd className="t-body font-semibold text-titulo">{t.paciente.nombre}{t.paciente.telefono && <span className="block t-meta font-normal text-secundario">Tel. {fmtTelefono(t.paciente.telefono)}</span>}</dd></div>}
             <div><dt className="t-meta text-secundario">Folio</dt><dd className="t-body font-semibold text-titulo">{t.id} <span className="t-meta font-normal text-secundario">(folio de ejemplo)</span></dd></div>
           </dl>
         </section>

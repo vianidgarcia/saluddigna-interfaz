@@ -8,7 +8,7 @@ import { container, link, outlineBtn, solidBtn } from '../components/ui'
 import { CLINICA_INICIAL, findClinic } from '../data/clinics'
 import {
   CANAL, ICONO_CANAL, METODO, PASOS, TIPO_EVENTO, TICK_MS, avance, conEvento, conNota, esNotaInterna,
-  fechaLarga, hace, horaEvento, TOTAL_PASOS, yaPaso, type Tramite,
+  fechaLarga, fmtTelefono, hace, horaEvento, TOTAL_PASOS, yaPaso, type Tramite,
 } from '../state/tramite'
 
 const fieldInput = 'w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion'
@@ -20,6 +20,9 @@ function coincide(t: Tramite, q: string): boolean {
   // por folio (con o sin "SD-") o por el nombre con el que se agendó la cita
   const folio = texto.replace(/^sd-?/, '').replace(/[^a-z0-9]/g, '')
   if (folio && t.id.toLowerCase().replace(/^sd-/, '').includes(folio)) return true
+  // por teléfono: con 4 o más dígitos (p. ej. los últimos 4)
+  const digitos = q.replace(/\D/g, '')
+  if (digitos.length >= 4 && t.paciente.telefono?.includes(digitos)) return true
   return !!t.paciente.nombre && sinAcentos(t.paciente.nombre).includes(texto)
 }
 
@@ -45,26 +48,26 @@ export function Asesor() {
       <p className="mt-2 max-w-3xl t-body">Busca al paciente y retoma su trámite con todo lo que ya hizo en web, WhatsApp o Call Center, sin volver a pedirle sus datos.</p>
 
       <section className="mt-6 max-w-3xl">
-        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-titulo">Buscar por folio o nombre del paciente</label>
+        <label id="buscar-l" htmlFor="buscar" className="text-base font-semibold text-titulo">Buscar por folio, nombre o teléfono del paciente</label>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Icon n="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-secundario" />
             <input id="buscar" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && buscar()}
-              aria-describedby="buscar-h" placeholder="Ej. SD-MXK3A9 o María López" className={`${fieldInput} h-12 pl-12`} />
+              aria-describedby="buscar-h" placeholder="Ej. SD-MXK3A9, María López o 667 123 4567" className={`${fieldInput} h-12 pl-12`} />
           </div>
           <button onClick={buscar} className={outlineBtn}><Icon n="search" />Buscar</button>
         </div>
-        <p id="buscar-h" className="mt-1 t-meta text-secundario">El paciente ve su folio en “Mis trámites” y en su tarjeta de inicio; el nombre es el que escribió al confirmar.</p>
+        <p id="buscar-h" className="mt-1 t-meta text-secundario">El paciente ve su folio en “Mis trámites” y en su tarjeta de inicio; nombre y teléfono son los que dio al confirmar. Del teléfono bastan los últimos 4 dígitos.</p>
 
         <div role="status" className="mt-4">
           {!t && <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">No hay trámites activos. Inicia uno desde el portal del paciente.</p>}
-          {t && buscado !== null && !encontrado && <p className="t-body text-titulo">No encontramos pacientes con “{buscado}”. Revisa el folio o el nombre.</p>}
+          {t && buscado !== null && !encontrado && <p className="t-body text-titulo">No encontramos pacientes con “{buscado}”. Revisa el folio, el nombre o el teléfono.</p>}
         </div>
         {t && encontrado && (
           <ul aria-label="Resultados de búsqueda">
             <li className="flex flex-col gap-2 border-y border-borde py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="t-sub font-bold text-titulo">{t.paciente.nombre ?? 'Paciente sin nombre registrado'}<span className="font-normal text-cuerpo"> · Folio {t.id}</span></p>
+                <p className="t-sub font-bold text-titulo">{t.paciente.nombre ?? 'Paciente sin nombre registrado'}<span className="font-normal text-cuerpo"> · Folio {t.id}{t.paciente.telefono && ` · Tel. ${fmtTelefono(t.paciente.telefono)}`}</span></p>
                 <p className="t-meta text-secundario">{t.estudio?.nombre ?? 'Estudio por elegir'} · Folio {t.id} (de ejemplo)</p>
               </div>
               <button onClick={() => setAbierta(true)} aria-pressed={abierta} className={`${link} shrink-0`}>{abierta ? 'Ficha abierta' : 'Abrir ficha'}<Icon n="arrow" /></button>
@@ -134,6 +137,9 @@ function Ficha({ t }: { t: Tramite }) {
           <h2 id="fp-t" className="t-card font-head text-titulo">Ficha del paciente</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <div><dt className="t-meta text-secundario">Nombre</dt><dd className="t-body font-semibold text-titulo">{p.nombre ?? 'Aún sin nombre (se pide al confirmar)'}</dd></div>
+            <div><dt className="t-meta text-secundario">Teléfono</dt><dd className="t-body font-semibold text-titulo">{p.telefono
+              ? <a href={`tel:+52${p.telefono}`} className="text-enlace underline underline-offset-4">{fmtTelefono(p.telefono)}</a>
+              : 'Aún sin teléfono (se pide al confirmar)'}</dd></div>
             <div><dt className="t-meta text-secundario">Folio del trámite</dt><dd className="t-body font-semibold text-titulo">{t.id} <span className="t-meta font-normal text-secundario">(de ejemplo)</span></dd></div>
           </dl>
         </section>

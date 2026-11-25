@@ -22,6 +22,8 @@ export function MapaClinicas({ clinicas, elegida, ubicacion, onElegir, alto = 'h
   const mapa = useRef<L.Map | null>(null)
   const capa = useRef<L.LayerGroup | null>(null)
   const marcas = useRef(new Map<string, L.CircleMarker>())
+  // último encuadre: se repite si el mapa estaba oculto (ancho 0) y vuelve a mostrarse (p. ej. pestaña Lista/Mapa)
+  const encuadre = useRef<(() => void) | null>(null)
   const elegirRef = useRef(onElegir)
   elegirRef.current = onElegir
 
@@ -39,7 +41,13 @@ export function MapaClinicas({ clinicas, elegida, ubicacion, onElegir, alto = 'h
     capa.current = L.layerGroup().addTo(m)
     mapa.current = m
     // el contenedor puede cambiar de tamaño (panel lateral, rotación del teléfono)
-    const ro = new ResizeObserver(() => m.invalidateSize())
+    let oculto = div.current.clientWidth === 0
+    const ro = new ResizeObserver(() => {
+      const ahora = !div.current || div.current.clientWidth === 0
+      m.invalidateSize()
+      if (oculto && !ahora) encuadre.current?.()
+      oculto = ahora
+    })
     ro.observe(div.current)
     return () => { ro.disconnect(); m.stop(); m.off(); m.remove(); mapa.current = null; capa.current = null }
   }, [])
@@ -72,9 +80,12 @@ export function MapaClinicas({ clinicas, elegida, ubicacion, onElegir, alto = 'h
     }
     // con ubicación: encuadra tú + las 5 más cercanas; si no, todas las coincidencias
     const foco: L.LatLngExpression[] = ubicacion ? [[ubicacion.lat, ubicacion.lng], ...puntos.slice(0, 5)] : puntos
-    if (foco.length === 1) m.setView(foco[0], 14, { animate: false })
-    else if (foco.length) m.fitBounds(L.latLngBounds(foco), { padding: [24, 24], maxZoom: 14, animate: false })
-    else m.fitBounds(MEXICO, { animate: false })
+    encuadre.current = () => {
+      if (foco.length === 1) m.setView(foco[0], 14, { animate: false })
+      else if (foco.length) m.fitBounds(L.latLngBounds(foco), { padding: [24, 24], maxZoom: 14, animate: false })
+      else m.fitBounds(MEXICO, { animate: false })
+    }
+    encuadre.current()
   }, [claveLista, ubicacion?.lat, ubicacion?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // resaltar y centrar la clínica elegida sin volver a encuadrar todo

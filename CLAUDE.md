@@ -14,18 +14,25 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
   EL PACIENTE NO TIENE CUENTA: usa todo el portal sin iniciar sesión (no hay usuario de prueba de paciente).
   "Iniciar sesión" (esquina superior derecha; "Entrar" por debajo de 1280 px) es solo para el personal: Asesor y
   Administrador, que ven `StaffHeader` + `views/Asesor`.
-- Agendado en 4 pasos (`TOTAL_PASOS`): Estudio, Clínica, Fecha y hora, Pago. El trámite se identifica por su FOLIO
-  (`id`, p. ej. SD-MX…) y el nombre que se pide en el paso 4 ("¿A nombre de quién es la cita?"); el asesor busca por
-  cualquiera de los dos. No se usa teléfono ni cuenta como identificador.
+- Agendado en 4 pasos (`TOTAL_PASOS`): Estudio, Clínica, Fecha y hora, Pago. En el paso 4 se piden los "Datos del
+  paciente": nombre y teléfono celular (10 dígitos, obligatorio, con formato 667 123 4567). El trámite se identifica
+  por su FOLIO (`id`, p. ej. SD-MX…); el asesor busca por folio, nombre o teléfono (bastan los últimos 4 dígitos) y ve
+  el teléfono en la ficha. No hay cuenta de paciente.
+- Persistencia: el trámite EN CURSO se conserva (localStorage) para retomarlo tras una interrupción; una cita YA
+  CONFIRMADA no se conserva al cerrar y volver a abrir la página (`loadTramiteAlAbrir`; el respaldo es el PDF).
+  La sincronización entre pestañas sigue usando `loadTramite` para ver la confirmación en vivo.
+- Mis trámites (paciente) NO muestra historial; la línea de tiempo es solo para el asesor.
 - Fecha y hora: `SelectorHorario`. Calendario de 6 semanas fijas: los días de otros meses y los días sin lugar se
-  ven atenuados y no se pueden elegir; solo los días disponibles son botones. Hora: campo "Hora de la cita" con panel
-  de dos columnas (hora y minutos, estilo time picker digital, sin librerías) que solo lista horarios libres.
+  ven atenuados y no se pueden elegir; solo los días disponibles son botones. Horarios: los libres a la vista,
+  agrupados en Mañana y Tarde, un toque para elegir; en teléfono, al tocar un día la vista baja a los horarios.
   Nunca permite fechas u horas pasadas (`yaPaso`).
 - Clínicas: `data/clinicasData.ts` (GENERADO: 261 sucursales reales de las páginas públicas de salud-digna.org, con
   estado, ciudad, dirección, teléfono, coordenadas y horario; no editar a mano ni inventar clínicas) y
   `data/clinics.ts` (búsqueda y distancias). `components/BuscadorClinica`: estado, ciudad, sucursal y
-  "Usar mi ubicación" (geolocalización real; si no se comparte, ubicación de ejemplo en Culiacán), de 20 en 20.
-  Lo usan el paso 2 del agendado y `ClinicSheet` (también el asesor).
+  "Usar mi ubicación" (geolocalización real; si no se comparte, ubicación de ejemplo en Culiacán) AL PRINCIPIO.
+  Sin paginar: la lista muestra todas las coincidencias del filtro y SOLO esas (no se fija la clínica elegida).
+  Paso 2: "Aún no lo decido" arriba a la derecha; escritorio: lista agrupada por ciudad (con su propio scroll) junto
+  al mapa; teléfono: conmutador Lista / Mapa. Lo usan el paso 2 del agendado y `ClinicSheet` (también el asesor).
 - Mapa: `components/MapaClinicas` (Leaflet + mosaicos de OpenStreetMap, sin clave; atribución obligatoria) muestra todas
   las coincidencias del buscador; tocar un punto elige la clínica. Se carga diferido con `MapaDiferido` (no pesa en el
   inicio) y, si no se puede descargar, avisa y la lista sigue funcionando. Sin animaciones de zoom/encuadre: Leaflet
@@ -36,7 +43,8 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - `src/state/tramite.ts`: tipo `Tramite`, persistencia en localStorage (`sd_tramite_activo`) y línea de tiempo de eventos.
   Los eventos `nota.interna` solo los ven Asesor/Administrador. Las pestañas se sincronizan con el evento `storage`.
 - `src/state/sesion.ts`: roles del personal (asesor, admin) y credenciales de demostración (`sd_sesion` en localStorage +
-  copia por pestaña en sessionStorage, para tener el portal y la vista del asesor abiertos a la vez).
+  copia por pestaña en sessionStorage, para tener el portal y la vista del asesor abiertos a la vez). Una pestaña que
+  se usa sin sesión queda marcada ("ninguna") y al recargar NO hereda la sesión del personal de otra pestaña.
 - Pagos: `src/state/pasarela.ts` es una pasarela SIMULADA (tarjeta con verificación 3-D Secure, efectivo en tienda y
   SPEI) cuya respuesta imita un cargo real (id, estado, autorización), para reemplazarla por una integración real
   (con servidor y llave privada) sin tocar la interfaz. `views/Pay.tsx`: checkout por método. Tarjetas de prueba:
