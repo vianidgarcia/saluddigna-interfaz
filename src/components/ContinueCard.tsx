@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../context'
-import { TOTAL_PASOS, avance, CANAL, ICONO_CANAL, TICK_MS, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
+import { TOTAL_PASOS, avance, CANAL, ICONO_CANAL, TICK_MS, clinicaTexto, estadoTexto, fechaLarga, hace, fmtHora } from '../state/tramite'
 import { Icon } from './Icon'
 import { WA, link, solidBtn } from './ui'
 
@@ -41,7 +41,7 @@ export function ContinueCard() {
         <p className="mt-1 t-body">
           {clinicaTexto(t)} · <strong className={`font-bold ${confirmada ? 'text-verde' : 'text-titulo'}`}>{confirmada && <Icon n="check" size={18} className="mr-1 inline -translate-y-px" />}{estadoTexto(t)}</strong>
         </p>
-        {confirmada && t.fecha && <p className="mt-1 t-body first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}</p>}
+        {confirmada && t.fecha && <p className="mt-1 t-body first-letter:uppercase">{fechaLarga(t.fecha)} · {fmtHora(t.hora)}</p>}
       </div>
       {!confirmada && (
         <div className="mt-8">

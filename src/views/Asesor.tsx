@@ -8,8 +8,7 @@ import { container, link, outlineBtn, solidBtn } from '../components/ui'
 import { CLINICA_INICIAL, findClinic } from '../data/clinics'
 import {
   CANAL, ICONO_CANAL, METODO, PASOS, TIPO_EVENTO, TICK_MS, avance, conEvento, conNota, esNotaInterna,
-  fechaLarga, fmtTelefono, hace, horaEvento, TOTAL_PASOS, yaPaso, type Tramite,
-} from '../state/tramite'
+  fechaLarga, fmtTelefono, hace, horaEvento, TOTAL_PASOS, yaPaso, type Tramite, fmtHora } from '../state/tramite'
 
 const fieldInput = 'w-full rounded-lg border border-borde bg-superficie px-4 text-base text-titulo transition-colors hover:border-borde-accion'
 const sinAcentos = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -108,9 +107,9 @@ function Ficha({ t }: { t: Tramite }) {
   }
   const guardarHorario = () => {
     if (!nf || !nh) return
-    update((x) => conEvento({ ...x, fecha: nf, hora: nh }, 'asesor.reagendado', `${autor} reagendó a ${fechaLarga(nf)}, ${nh} (horario de demostración)`, 'call_center'))
+    update((x) => conEvento({ ...x, fecha: nf, hora: nh }, 'asesor.reagendado', `${autor} reagendó a ${fechaLarga(nf)}, ${fmtHora(nh)} (horario de demostración)`, 'call_center'))
     setReagendar(false)
-    avisar(`Cita reagendada: ${fechaLarga(nf)}, ${nh}`)
+    avisar(`Cita reagendada: ${fechaLarga(nf)}, ${fmtHora(nh)}`)
   }
   const reenviarReferencia = () => {
     update((x) => conEvento(x, 'pago.referencia_enviada', `${autor} reenvió ${x.metodoPago === 'spei' ? 'los datos de transferencia SPEI' : 'la referencia de pago en Oxxo'} por WhatsApp (demo)`, 'call_center'))
@@ -118,7 +117,7 @@ function Ficha({ t }: { t: Tramite }) {
   }
   const cerrar = () => {
     update((x) => conEvento({ ...x, estado: 'confirmada', paso: TOTAL_PASOS, metodoPago: x.metodoPago ?? 'en_clinica', desdeResumen: false },
-      'cita.confirmada', `${autor} cerró el trámite como confirmado · ${x.fecha ? fechaLarga(x.fecha) : ''} ${x.hora ?? ''} · ${METODO[x.metodoPago ?? 'en_clinica']}`, 'call_center'))
+      'cita.confirmada', `${autor} cerró el trámite como confirmado · ${x.fecha ? fechaLarga(x.fecha) : ''} ${fmtHora(x.hora)} · ${METODO[x.metodoPago ?? 'en_clinica']}`, 'call_center'))
     avisar('Trámite cerrado: cita confirmada')
   }
   const guardarNota = () => {
@@ -161,7 +160,7 @@ function Ficha({ t }: { t: Tramite }) {
           <dl className="mt-4 divide-y divide-borde">
             <Fila k="Estudio">{t.estudio?.nombre ?? <Pendiente>Sin elegir</Pendiente>}</Fila>
             <Fila k="Clínica">{c ? <>{c.name}<span className="block t-meta font-normal text-secundario">{c.address}</span></> : <Pendiente>Pendiente</Pendiente>}</Fila>
-            <Fila k="Fecha y hora">{t.fecha && t.hora ? <span className="first-letter:uppercase">{fechaLarga(t.fecha)} · {t.hora}</span> : <Pendiente>Sin elegir</Pendiente>}</Fila>
+            <Fila k="Fecha y hora">{t.fecha && t.hora ? <span className="first-letter:uppercase">{fechaLarga(t.fecha)} · {fmtHora(t.hora)}</span> : <Pendiente>Sin elegir</Pendiente>}</Fila>
             <Fila k="Método de pago">{t.metodoPago ? <>{METODO[t.metodoPago]}
               {t.pago && <span className="block t-meta font-normal text-secundario">
                 {t.pago.estado === 'aprobado' ? `Pago aprobado${t.pago.tarjeta ? ` · ${t.pago.tarjeta.marca} •••• ${t.pago.tarjeta.ultimos4}` : ''}${t.pago.autorizacion ? ` · autorización ${t.pago.autorizacion}` : ''}`

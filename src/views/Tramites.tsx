@@ -3,7 +3,7 @@ import { Back } from '../components/Back'
 import { Icon } from '../components/Icon'
 import { BotonComprobante } from '../components/BotonComprobante'
 import { container, outlineBtn, solidBtn } from '../components/ui'
-import { TOTAL_PASOS, CANAL, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
+import { TOTAL_PASOS, CANAL, clinicaTexto, estadoTexto, fechaLarga, hace, fmtHora } from '../state/tramite'
 
 export function Tramites() {
   const { tramite: t, continuar, startAgendar } = useApp()
@@ -29,7 +29,7 @@ export function Tramites() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 id="tr-t" className="t-card font-head text-titulo">{t.estudio?.nombre ?? 'Cita por agendar'}</h2>
-            <p className="mt-1 t-body">{clinicaTexto(t)}{t.fecha && t.hora ? <> · <span className="first-letter:uppercase">{fechaLarga(t.fecha)}, {t.hora}</span></> : null}</p>
+            <p className="mt-1 t-body">{clinicaTexto(t)}{t.fecha && t.hora ? <> · <span className="first-letter:uppercase">{fechaLarga(t.fecha)}, {fmtHora(t.hora)}</span></> : null}</p>
             <p className="mt-2">
               {confirmada
                 ? <span className="inline-flex items-center gap-2 t-body font-semibold text-verde"><Icon n="check" size={18} />Cita confirmada</span>
