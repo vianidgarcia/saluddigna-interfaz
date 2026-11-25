@@ -82,6 +82,10 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
   El encabezado del portal va justo de ancho: sus botones no se envuelven (whitespace-nowrap); revisa 1024, 1280 y
   1440 px al agregarle algo. Únicas excepciones con color fijo: el aviso flotante (toast)
   y el fondo del panel de clínicas (#1F2933).
+- Logo oficial: `components/LogoSaludDigna.tsx` (del archivo salud_digna.svg proporcionado, sin metadatos), en línea
+  para que se vea sin conexión. Colores por variable: `--color-logo-verde` #008959, `--color-logo-gris` #868589 y
+  `--color-logo-gris-2` #808082 (en modo oscuro se aclaran). `Logo` (Header.tsx) lo usa a 28 px de alto en teléfono y
+  32 px desde 640 px, en el encabezado del portal, el del personal y Entrar.
 - Tipografía: títulos Montserrat 700 (utilidad `font-head`); todo lo demás Open Sans.
   Escala ya definida en src/index.css: t-greeting, t-section, t-card, t-sub, t-body, t-meta.
 - Estructura: un solo contenedor max-w-[1200px] px-4 lg:px-8; bandas de fondo a todo el ancho;
