@@ -80,6 +80,19 @@ export function partirFechaHora(iso: string): [string, string] {
   return [`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`, `${p(d.getHours())}:${p(d.getMinutes())}`]
 }
 
+/**
+ * Empareja el nombre de un estudio del portal con uno de la base.
+ * Exacto (sin acentos ni mayúsculas) o, si uno contiene al otro, se toma como el mismo
+ * ("Mastografía bilateral" ~ "Mastografía"). Un combo con "+" solo empareja si es idéntico:
+ * "Mastografía + ultrasonido mamario" NO es "Mastografía" y reservaría el estudio equivocado.
+ */
+export function emparejarEstudio<T extends { nombre: string }>(lista: T[], nombre: string): T | undefined {
+  const n = normalizar(nombre)
+  const exacto = lista.find((e) => normalizar(e.nombre) === n)
+  if (exacto || n.includes('+')) return exacto
+  return lista.find((e) => { const b = normalizar(e.nombre); return !b.includes('+') && (b.includes(n) || n.includes(b)) })
+}
+
 /** Clave con la que el portal identifica un horario ("2026-11-27 13:30"). */
 export const claveHorario = (fecha: string, hora: string) => `${fecha} ${hora}`
 

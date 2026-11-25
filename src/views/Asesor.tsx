@@ -56,7 +56,9 @@ export function Asesor() {
         </Suspense>
       )}
 
-      <section className="mt-6 max-w-3xl">
+      {/* Modo api: la búsqueda y el recorrido del paciente son los de la bandeja (datos reales). La ficha de abajo
+          opera sobre el trámite local del navegador y NO escribe en la base, así que solo existe en modo local. */}
+      {!esApi && <section className="mt-6 max-w-3xl">
         <h2 className="t-section font-head text-titulo">{esApi ? 'Trámite de este dispositivo' : 'Buscar paciente'}</h2>
         {esApi && <p className="mt-1 t-body">Solo el trámite abierto en este navegador. Para los de otros canales usa la bandeja de arriba.</p>}
         <label id="buscar-l" htmlFor="buscar" className="mt-4 block text-base font-semibold text-titulo">Buscar por folio, nombre o teléfono del paciente</label>
@@ -85,9 +87,9 @@ export function Asesor() {
             </li>
           </ul>
         )}
-      </section>
+      </section>}
 
-      {t && abierta && <Ficha t={t} />}
+      {!esApi && t && abierta && <Ficha t={t} />}
       {sesion?.rol === 'admin' && <PanelAdmin />}
     </div>
   )
@@ -283,12 +285,12 @@ function PanelAdmin() {
     <section aria-labelledby="adm-t" className="mt-12 border-t border-borde pt-8">
       <h2 id="adm-t" className="flex items-center gap-2 t-card font-head text-titulo"><Icon n="shield" />Administración de la demo</h2>
       <p className="mt-1 t-meta text-secundario">Visible solo para el rol Administrador.</p>
-      <dl className="mt-4 grid grid-cols-3 gap-4 sm:max-w-lg">
+      {!esApi && <dl className="mt-4 grid grid-cols-3 gap-4 sm:max-w-lg">
         {porCanal.map(([c, n]) => (
           <div key={c}><dt className="flex items-center gap-1 t-meta text-secundario"><Icon n={ICONO_CANAL[c]} size={16} />{CANAL[c]}</dt><dd className="font-head t-card text-titulo">{n}</dd></div>
         ))}
-      </dl>
-      <p className="mt-1 t-meta text-secundario">Movimientos del trámite activo por canal.</p>
+      </dl>}
+      {!esApi && <p className="mt-1 t-meta text-secundario">Movimientos del trámite activo por canal.</p>}
       <div className="mt-4" role="status">
         {!confirmar
           ? <button onClick={() => setConfirmar(true)} disabled={!t} className={`${outlineBtn} disabled:cursor-not-allowed disabled:border-borde disabled:bg-banda disabled:text-cuerpo`}><Icon n="refresh" />Reiniciar demo</button>
