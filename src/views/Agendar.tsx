@@ -104,7 +104,7 @@ function Flujo({ t }: { t: Tramite }) {
       <Back />
       <h1 className="mt-2 t-section font-head text-titulo lg:mt-4">Agendar cita</h1>
       <Progreso paso={paso} />
-      <div className={`mt-6 lg:mt-8 ${paso === 2 ? '' : paso === 3 ? 'max-w-4xl' : 'max-w-3xl'}`}>
+      <div className={`mt-6 lg:mt-8 ${paso === 2 ? '' : 'max-w-3xl'}`}>
         <h2 ref={headRef} tabIndex={-1} data-focus-target className="t-card font-head text-titulo">
           <span className="sr-only">Paso {paso} de {TOTAL_PASOS}: </span>{PREGUNTA[paso]}
         </h2>
