@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   CANAL_DESDE_API, CANAL_HACIA_API, PASO_DESDE_API, PASO_HACIA_API, canalDesdeApi, claveHorario,
-  estadoDesdeApi, esMismoTramite, fechaHoraDeHorarios, fusionarDesdeApi, normalizar, partirFechaHora,
+  emparejarEstudio, estadoDesdeApi, esMismoTramite, fechaHoraDeHorarios, fusionarDesdeApi, normalizar, partirFechaHora,
   aE164, partirNombre,
 } from './mapa.ts'
 import type { Tramite as TramiteApi, Horario } from './api.ts'
@@ -121,4 +121,13 @@ test('un trámite viejo de la base no se funde sobre el que el paciente arma aho
   assert.equal(esMismoTramite(local, base({ folio: 'SD-1700000000' })), true, 'mismo folio')
   const mismoEstudio = base({ folio: 'SD-9X9X', estudio: { id: 'e2', nombre: 'Biometría hemática' } as TramiteApi['estudio'] })
   assert.equal(esMismoTramite(local, mismoEstudio), true, 'mismo estudio: se continúa el de otro canal')
+})
+
+test('un estudio del portal solo empareja con el estudio correcto de la base', () => {
+  const base = [{ nombre: 'Mastografía' }, { nombre: 'Biometría hemática' }, { nombre: 'Rayos X de tórax' }]
+  assert.equal(emparejarEstudio(base, 'Biometría Hemática')?.nombre, 'Biometría hemática', 'sin acentos ni mayúsculas')
+  assert.equal(emparejarEstudio(base, 'Mastografía bilateral')?.nombre, 'Mastografía', 'un calificativo no cambia el estudio')
+  assert.equal(emparejarEstudio(base, 'Mastografía + ultrasonido mamario'), undefined, 'un combo con + es otro estudio')
+  assert.equal(emparejarEstudio(base, 'Papanicolaou'), undefined, 'lo que la base no tiene no se inventa')
+  assert.equal(emparejarEstudio([{ nombre: 'Mastografía + ultrasonido mamario' }], 'Mastografía + ultrasonido mamario')?.nombre, 'Mastografía + ultrasonido mamario', 'el combo idéntico sí')
 })

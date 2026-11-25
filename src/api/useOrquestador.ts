@@ -16,6 +16,7 @@ import type { Contexto, EventoPaciente, ModoOtp } from './api'
 import { MODO, esApi } from './modo'
 import { canalDesdeApi, detalleEvento, esMismoTramite, fusionarDesdeApi } from './mapa'
 import { conEvento, type Tramite } from '../state/tramite'
+import { STUDIES } from '../data/studies'
 
 /* El orquestador (y con él la biblioteca de Supabase) se descarga la primera vez que se necesita.
    En modo local nunca se pide, así que el arranque del portal pesa lo mismo que antes. */
@@ -49,6 +50,8 @@ export type Orquestador = {
   horarios: Orq['horarios']
   /** Horarios libres de un rango de fechas (null = la base no conoce esa clínica o estudio). */
   horariosRango: Orq['horariosRango']
+  /** Estudios del portal que la base tiene; null = todos (modo local o si no se pudo consultar). */
+  estudiosDisponibles: Set<string> | null
   reiniciar: () => Promise<void>
 }
 
@@ -63,6 +66,7 @@ export function useOrquestador(
   const [estado, setEstado] = useState<EstadoEnlace>(esApi ? 'conectando' : 'apagado')
   const [verificado, setVerificado] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
+  const [estudiosDisponibles, setEstudiosDisponibles] = useState<Set<string> | null>(null)
   const alCambiar = useRef(alCambiarRemoto)
   alCambiar.current = alCambiarRemoto
 
@@ -108,6 +112,8 @@ export function useOrquestador(
         if (!vivo) return
         setEstado('listo')
         aplicar(ctx)
+        // el catálogo es público: solo se ofrece lo que la base puede agendar
+        void orq.estudiosOfrecidos(Object.values(STUDIES).flat()).then((n) => { if (vivo && n.length) setEstudiosDisponibles(new Set(n)) }).catch(() => {})
         dejarDeEscuchar = await orq.escuchar(alLlegar)
       } catch (e) {
         if (!vivo) return
@@ -182,6 +188,6 @@ export function useOrquestador(
   return {
     modo: MODO, estado, verificado, aviso,
     limpiarAviso: () => setAviso(null),
-    confirmar, pedirCodigo, confirmarCodigo, horarios, horariosRango, reiniciar,
+    confirmar, pedirCodigo, confirmarCodigo, horarios, horariosRango, estudiosDisponibles, reiniciar,
   }
 }

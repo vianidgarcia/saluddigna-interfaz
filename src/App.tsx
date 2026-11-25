@@ -160,6 +160,7 @@ export default function App() {
     setView('home'); window.scrollTo(0, 0)
   }
   const salir = () => {
+    if (esApi) void import('./api/personal').then((p) => p.salirPersonal()).catch(() => {})
     saveSesion(null); setSesion(null); setEntrar(null)
     setView('home')
     try { window.sessionStorage.setItem(VIEW_KEY, 'home') } catch { /* sin almacenamiento */ }
@@ -178,7 +179,7 @@ export default function App() {
     else if (accion === 'tramites') go('tramites')
   })
 
-  const ctx: AppCtx = { go, toast, openClinics: () => setSheet(true), scrollToId, tramite, update, startAgendar, continuar, simularWhatsApp, reiniciarDemo, sesion, salir, abrirEntrar, horariosClinica: esApi ? orq.horariosRango : undefined }
+  const ctx: AppCtx = { go, toast, openClinics: () => setSheet(true), scrollToId, tramite, update, startAgendar, continuar, simularWhatsApp, reiniciarDemo, sesion, salir, abrirEntrar, horariosClinica: esApi ? orq.horariosRango : undefined, estudiosDisponibles: orq.estudiosDisponibles }
   const toastEl = (
     <div role="status" aria-live="polite" className="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 lg:bottom-8">
       {toastMsg && <div className="rounded-lg bg-[#1F2933] px-5 py-3 text-base text-white shadow-lg">{toastMsg}</div>}

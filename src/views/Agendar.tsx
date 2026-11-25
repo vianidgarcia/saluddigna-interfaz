@@ -4,7 +4,7 @@ import { Back } from '../components/Back'
 import { SelectorHorario } from '../components/SelectorHorario'
 import { BotonComprobante } from '../components/BotonComprobante'
 import { Icon } from '../components/Icon'
-import { CHIPS, STUDIES } from '../data/studies'
+import { CHIPS, estudiosOfrecidos } from '../data/studies'
 import { findClinic } from '../data/clinics'
 import { FiltrosClinica, fmtKm, useBuscadorClinica } from '../components/BuscadorClinica'
 import { MapaClinicasDiferido as MapaClinicas } from '../components/MapaDiferido'
@@ -149,7 +149,8 @@ function Progreso({ paso }: { paso: Paso }) {
 
 /* ---------- paso 1: estudio ---------- */
 function PasoEstudio({ t }: { t: Tramite }) {
-  const { update } = useApp()
+  const { update, estudiosDisponibles } = useApp()
+  const catalogo = estudiosOfrecidos(estudiosDisponibles)
   const inicial = t.estudio && CHIPS.includes(t.estudio.categoria) ? t.estudio.categoria : null
   const [cat, setCat] = useState<string | null>(inicial)
   const paquete = t.estudio && !CHIPS.includes(t.estudio.categoria) ? t.estudio : null
@@ -162,13 +163,13 @@ function PasoEstudio({ t }: { t: Tramite }) {
       )}
       <p className="text-base font-semibold text-titulo" id="cat-l">Categoría</p>
       <div className="mt-2 flex flex-wrap gap-2" role="group" aria-labelledby="cat-l">
-        {CHIPS.map((c) => <button key={c} onClick={() => setCat(c)} aria-pressed={cat === c} className={chip(cat === c)}>{c}</button>)}
+        {Object.keys(catalogo).map((c) => <button key={c} onClick={() => setCat(c)} aria-pressed={cat === c} className={chip(cat === c)}>{c}</button>)}
       </div>
       {cat && (
         <fieldset className="mt-6">
           <legend className="text-base font-semibold text-titulo">Estudios de {cat.toLowerCase()}</legend>
           <div className="mt-2 flex flex-col gap-2">
-            {STUDIES[cat].map((n) => (
+            {(catalogo[cat] ?? []).map((n) => (
               <label key={n} className={`${optionRow} border-borde hover:border-borde-accion`}>
                 <input type="radio" name="estudio" className={radio} checked={t.estudio?.nombre === n}
                   onChange={() => update((x) => ({ ...x, estudio: { categoria: cat, nombre: n } }))} />

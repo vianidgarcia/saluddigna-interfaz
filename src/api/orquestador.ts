@@ -24,8 +24,8 @@ import {
   type Tramite as TramiteApi,
 } from './api'
 import { cliente } from './cliente'
-import { idClinica, idEstudio, olvidarCatalogos } from './catalogo'
-import { aE164, fechaHoraDeHorarios, partirNombre } from './mapa'
+import { idClinica, idEstudio, listaEstudios, olvidarCatalogos } from './catalogo'
+import { aE164, emparejarEstudio, fechaHoraDeHorarios, partirNombre } from './mapa'
 
 // se reexportan para que las vistas no tengan que saber en qué archivo viven
 export { aE164, partirNombre }
@@ -161,6 +161,12 @@ export async function crearTramiteCompleto(datos: { estudio: string; clinica: st
     enlace.remoto = t
   }
   return t
+}
+
+/** De los nombres de estudio del portal, los que la base tiene (el resto no se puede agendar en modo api). */
+export async function estudiosOfrecidos(nombres: string[]): Promise<string[]> {
+  const lista = await listaEstudios(exigirCliente())
+  return nombres.filter((n) => emparejarEstudio(lista, n))
 }
 
 /** De qué clínica y estudio son los horarios guardados en `enlace.horarios` (clave "clinicaId|estudioId"). */

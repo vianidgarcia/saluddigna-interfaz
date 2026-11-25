@@ -9,7 +9,7 @@
  * solución de fondo es generar el seed de la base desde data/clinicasData.ts.
  */
 import { catalogoEstudios, clinicasParaEstudio, type Cliente, type Clinica, type Estudio } from './api'
-import { normalizar } from './mapa'
+import { emparejarEstudio, normalizar } from './mapa'
 import { CLINICAS_DATOS } from '../data/clinicasData'
 
 let estudios: Estudio[] | null = null
@@ -23,13 +23,7 @@ export async function listaEstudios(c: Cliente): Promise<Estudio[]> {
 
 /** uuid del estudio cuyo nombre usa el portal. null si el catálogo de la base no lo tiene. */
 export async function idEstudio(c: Cliente, nombre: string): Promise<string | null> {
-  const n = normalizar(nombre)
-  const lista = await listaEstudios(c)
-  const exacto = lista.find((e) => normalizar(e.nombre) === n)
-  if (exacto) return exacto.id
-  // Tolerancia: el portal dice "Mastografía bilateral" y la base "Mastografía (bilateral)".
-  const parcial = lista.find((e) => normalizar(e.nombre).includes(n) || n.includes(normalizar(e.nombre)))
-  return parcial?.id ?? null
+  return emparejarEstudio(await listaEstudios(c), nombre)?.id ?? null
 }
 
 /**

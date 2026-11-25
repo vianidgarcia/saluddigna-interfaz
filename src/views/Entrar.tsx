@@ -101,7 +101,7 @@ export function Entrar({ onEntrar, onVolver, rolInicial = 'asesor', motivo }: {
             <h2 id="cred-t" className="t-card font-head text-titulo">{esApi ? 'Cuentas del personal' : 'Credenciales de demostración'}</h2>
             <p className="mt-1 t-meta text-secundario">
               {esApi
-                ? 'Conectado al orquestador: entra con tu cuenta de core.staff. El rol lo decide el sistema; estas credenciales de demostración no sirven aquí.'
+                ? 'Conectado al orquestador: entra con tu cuenta del personal. El rol lo decide el sistema, no este formulario. La contraseña te la da quien administra el proyecto.'
                 : 'Solo para la demo: no hay cuentas reales.'}
             </p>
             <ul className="mt-4 flex flex-col">
@@ -111,7 +111,7 @@ export function Entrar({ onEntrar, onVolver, rolInicial = 'asesor', motivo }: {
                   <p className="mt-1 t-meta text-cuerpo">{c.descripcion}</p>
                   <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 t-body">
                     <dt className="text-secundario">Correo</dt><dd className="font-semibold text-titulo">{c.correo}</dd>
-                    <dt className="text-secundario">Contraseña</dt><dd className="font-semibold text-titulo">{c.clave}</dd>
+                    {!esApi && <><dt className="text-secundario">Contraseña</dt><dd className="font-semibold text-titulo">{c.clave}</dd></>}
                   </dl>
                   {!esApi && <button onClick={() => usar(c)} className={`${outlineBtn} mt-3`} aria-label={`Usar credenciales de ${ROL[c.rol]}`}>Usar estas credenciales</button>}
                 </li>
