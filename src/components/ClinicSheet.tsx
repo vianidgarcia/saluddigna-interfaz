@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Clinic } from '../data/clinics'
-import { FiltrosClinica, MasClinicas, fmtKm, useBuscadorClinica } from './BuscadorClinica'
+import { FiltrosClinica, fmtKm, useBuscadorClinica } from './BuscadorClinica'
 import { MapaClinicasDiferido as MapaClinicas } from './MapaDiferido'
 import { Icon } from './Icon'
 import { NB } from './ui'
@@ -51,7 +51,6 @@ export function ClinicSheet({ current, onSelect, onClose, titulo = 'Elige tu cl√
             )
           })}
           {b.activo && !b.total && <li className="border-t border-borde py-4 t-body">No encontramos cl√≠nicas con esos filtros.</li>}
-          <li><MasClinicas b={b} /></li>
         </ul>
       </div>
     </div>

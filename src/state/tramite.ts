@@ -26,8 +26,8 @@ export type Tramite = {
   clinicaPendiente: boolean
   fecha: string | null // AAAA-MM-DD
   hora: string | null // HH:MM
-  /** sin cuenta ni teléfono: el trámite se identifica por su folio (id); el nombre se pide al confirmar la cita */
-  paciente: { nombre: string | null }
+  /** sin cuenta: el trámite se identifica por su folio (id); nombre y teléfono (10 dígitos) se piden al confirmar */
+  paciente: { nombre: string | null; telefono: string | null }
   metodoPago: MetodoPago | null
   pago?: Pago | null
   paso: Paso
@@ -78,16 +78,28 @@ export function loadTramite(): Tramite | null {
     const t = JSON.parse(raw) as Tramite
     if (!t || !t.id || !Array.isArray(t.eventos)) return null
     // trámites guardados con la versión de 5 pasos (incluía identificación por WhatsApp)
-    const viejo = t as unknown as { paso: number; paciente?: { nombre?: string | null } }
+    const viejo = t as unknown as { paso: number; paciente?: { nombre?: string | null; telefono?: string | null } }
     return {
       ...t,
       paso: Math.min(Math.max(viejo.paso, 1), TOTAL_PASOS) as Paso,
-      paciente: { nombre: viejo.paciente?.nombre ?? null },
+      paciente: { nombre: viejo.paciente?.nombre ?? null, telefono: viejo.paciente?.telefono ?? null },
     }
   } catch {
     return null
   }
 }
+
+/** Al abrir la página: una cita ya confirmada no se conserva (no hay cuenta; el comprobante en PDF es el respaldo).
+    Un trámite en curso sí se conserva, para retomarlo tras una interrupción. Las demás lecturas (p. ej. la
+    sincronización entre pestañas) usan loadTramite para no perder la confirmación en vivo. */
+export function loadTramiteAlAbrir(): Tramite | null {
+  const t = loadTramite()
+  if (t?.estado === 'confirmada') { saveTramite(null); return null }
+  return t
+}
+
+/** Teléfono a 10 dígitos con formato 667 123 4567. */
+export const fmtTelefono = (d: string | null) => (d ?? '').replace(/^(\d{3})(\d{3})(\d{4})$/, '$1 $2 $3')
 
 export function saveTramite(t: Tramite | null) {
   try {
@@ -107,7 +119,7 @@ export function nuevoTramite(canal: Canal = 'web'): Tramite {
     clinicaPendiente: false,
     fecha: null,
     hora: null,
-    paciente: { nombre: null },
+    paciente: { nombre: null, telefono: null },
     metodoPago: null,
     paso: 1,
     estado: 'en_curso',

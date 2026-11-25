@@ -3,7 +3,7 @@ import { Back } from '../components/Back'
 import { Icon } from '../components/Icon'
 import { BotonComprobante } from '../components/BotonComprobante'
 import { container, outlineBtn, solidBtn } from '../components/ui'
-import { TOTAL_PASOS, CANAL, ICONO_CANAL, esNotaInterna, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
+import { TOTAL_PASOS, CANAL, clinicaTexto, estadoTexto, fechaLarga, hace } from '../state/tramite'
 
 export function Tramites() {
   const { tramite: t, continuar, startAgendar } = useApp()
@@ -41,21 +41,6 @@ export function Tramites() {
             ? <div className="flex shrink-0 flex-col gap-3"><BotonComprobante t={t} /><button onClick={() => startAgendar()} className={outlineBtn}><Icon n="calendar" />Agendar otra cita</button></div>
             : <button onClick={continuar} className={`${solidBtn} shrink-0`}>Continuar trámite<Icon n="arrow" /></button>}
         </div>
-      </section>
-      <section aria-labelledby="hist-t" className="mt-10 max-w-3xl">
-        <h2 id="hist-t" className="t-card font-head text-titulo">Historial del trámite</h2>
-        <p className="mt-1 t-meta text-secundario">Cada movimiento queda registrado, sin importar el canal. Así nadie te vuelve a preguntar lo que ya dijiste.</p>
-        <ol className="mt-4">
-          {t.eventos.filter((e) => !esNotaInterna(e)).reverse().map((e, i) => (
-            <li key={i} className="flex gap-3 border-t border-borde py-3">
-              <Icon n={ICONO_CANAL[e.canal]} className="mt-0.5 text-icono" />
-              <div>
-                <p className="t-body text-titulo">{e.detalle}</p>
-                <p className="t-meta text-secundario">{CANAL[e.canal]} · {hace(e.fecha)} · <code className="font-mono">{e.tipo}</code></p>
-              </div>
-            </li>
-          ))}
-        </ol>
       </section>
     </div>
   )

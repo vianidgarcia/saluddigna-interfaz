@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { fechaLarga, hoyISO, isoDia, yaPaso } from '../state/tramite'
 import { Icon } from './Icon'
 
-/* Calendario + selector de hora. Nunca permite fechas ni horas que ya pasaron.
+/* Calendario + horarios. Nunca permite fechas ni horas que ya pasaron.
    La ocupación es de demostración, estable para cada día y hora. */
 
 export const DIAS_MAXIMOS = 90
@@ -29,13 +29,16 @@ export function SelectorHorario({ fecha, hora, onFecha, onHora, id = 'h' }: {
   const habilitado = (iso: string) => iso >= hoy && iso <= max && hayLugar(iso)
   // fecha guardada que ya pasó: se trata como no elegida
   const fechaValida = fecha && habilitado(fecha) ? fecha : null
+  // cuenta los días elegidos por el usuario: solo entonces se lleva la vista a los horarios (no al restaurar)
+  const [toques, setToques] = useState(0)
+  const elegirDia = (v: string) => { onFecha(v); setToques((n) => n + 1) }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-10">
-      <Calendario id={id} fecha={fechaValida} hoy={hoy} max={max} habilitado={habilitado} onFecha={onFecha} />
+      <Calendario id={id} fecha={fechaValida} hoy={hoy} max={max} habilitado={habilitado} onFecha={elegirDia} />
       <div>
         {fechaValida
-          ? <SelectorHora key={fechaValida} id={id} fecha={fechaValida} hora={hora} onHora={onHora} />
+          ? <SelectorHora id={id} fecha={fechaValida} hora={hora} onHora={onHora} toques={toques} />
           : <p className="rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">Elige un día en el calendario para ver las horas disponibles.</p>}
         {fecha && !fechaValida && <p role="status" className="mt-3 t-body text-titulo">La fecha que tenías guardada ya pasó o no tiene lugar. Elige otra.</p>}
       </div>
@@ -151,103 +154,57 @@ function Calendario({ id, fecha, hoy, max, habilitado, onFecha }: {
   )
 }
 
-/* ---------- selector de hora (estilo "time picker" digital, sin librerías) ---------- */
-function SelectorHora({ id, fecha, hora, onHora }: { id: string; fecha: string; hora: string | null; onHora: (h: string | null) => void }) {
-  const inicial = hora && disponible(fecha, hora) ? hora : null
+/* ---------- horario: los horarios libres a la vista, agrupados en mañana y tarde; un toque para elegir ---------- */
+const FRANJAS: [string, (h: string) => boolean][] = [
+  ['Mañana', (h) => h < '12:00'],
+  ['Tarde', (h) => h >= '12:00'],
+]
+
+function SelectorHora({ id, fecha, hora, onHora, toques }: { id: string; fecha: string; hora: string | null; onHora: (h: string | null) => void; toques: number }) {
+  const elegida = hora && disponible(fecha, hora) ? hora : null
   // la hora guardada ya no sirve (pasó o se ocupó): se limpia
-  useEffect(() => { if (hora && !inicial) onHora(null) }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const [abierto, setAbierto] = useState(false)
-  const [hh, setHh] = useState(inicial?.slice(0, 2) ?? '')
-  const campo = useRef<HTMLButtonElement>(null)
-  const panel = useRef<HTMLDivElement>(null)
-
-  // solo horas con al menos un horario libre, y solo minutos libres
-  const horas = Array.from(new Set(HORAS.map((h) => h.slice(0, 2)))).filter((h) => HORAS.some((x) => x.startsWith(h + ':') && disponible(fecha, x)))
-  const libres = (h: string) => HORAS.filter((x) => x.startsWith(h + ':') && disponible(fecha, x)).map((x) => x.slice(3))
-  const siguiente = HORAS.find((h) => disponible(fecha, h)) ?? null
-  const elegida = inicial ?? (hora && disponible(fecha, hora) ? hora : null)
-
-  const cerrar = (devolverFoco = true) => { setAbierto(false); if (devolverFoco) campo.current?.focus() }
-  const abrir = () => { setHh(elegida?.slice(0, 2) ?? hh ?? ''); setAbierto(true) }
-
+  useEffect(() => { if (hora && !elegida) onHora(null) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const seccion = useRef<HTMLDivElement>(null)
+  // al tocar un día en el teléfono, la sección de horarios queda a la vista (el calendario ocupa la pantalla)
   useEffect(() => {
-    if (!abierto) return
-    // foco en la hora elegida (o la primera) y desplazamiento para que se vea
-    const b = panel.current?.querySelector<HTMLButtonElement>('[data-col="h"][aria-pressed="true"]') ?? panel.current?.querySelector<HTMLButtonElement>('[data-col="h"]')
-    b?.focus(); b?.scrollIntoView({ block: 'nearest' })
-    const fuera = (e: MouseEvent) => { if (!panel.current?.contains(e.target as Node) && !campo.current?.contains(e.target as Node)) cerrar(false) }
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrar() }
-    document.addEventListener('mousedown', fuera)
-    document.addEventListener('keydown', esc)
-    return () => { document.removeEventListener('mousedown', fuera); document.removeEventListener('keydown', esc) }
-  }, [abierto]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (toques > 0 && window.matchMedia('(max-width: 1023px)').matches) seccion.current?.scrollIntoView({ block: 'start' })
+  }, [toques])
 
-  const elegirHora = (h: string) => {
-    setHh(h)
-    requestAnimationFrame(() => panel.current?.querySelector<HTMLButtonElement>('[data-col="m"]')?.focus())
-  }
-  const elegirMin = (m: string) => { onHora(`${hh}:${m}`); cerrar() }
-
-  // flechas arriba/abajo dentro de cada columna
-  const onKeyCol = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
-    e.preventDefault()
-    const bs = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('button')]
-    const i = bs.indexOf(document.activeElement as HTMLButtonElement)
-    const n = bs[Math.max(0, Math.min(bs.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))]
-    n?.focus(); n?.scrollIntoView({ block: 'nearest' })
-  }
-
-  const opcion = (on: boolean) => `flex min-h-12 w-full items-center justify-center rounded-lg text-base transition-colors ${on ? 'bg-accion-hover font-semibold text-white' : 'text-titulo hover:bg-resaltado'}`
-
+  const libres = HORAS.filter((h) => disponible(fecha, h))
   return (
-    <div>
+    <div ref={seccion} className="scroll-mt-24">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <p className="t-sub font-bold text-titulo first-letter:uppercase">{fechaLarga(fecha)}</p>
+        <h3 id={`${id}-hl`} className="t-sub font-bold text-titulo first-letter:uppercase">{fechaLarga(fecha)}</h3>
         <span className="rounded-full bg-resaltado px-3 py-1 t-meta font-semibold text-titulo">Horarios de demostración</span>
       </div>
-      <div className="relative mt-4">
-        <p id={`${id}-hl`} className="text-base font-semibold text-titulo">Hora de la cita</p>
-        <button ref={campo} id={`${id}-campo`} onClick={() => (abierto ? cerrar() : abrir())} aria-haspopup="dialog" aria-expanded={abierto}
-          aria-controls={abierto ? `${id}-panel` : undefined} aria-labelledby={`${id}-hl ${id}-campo`}
-          className={`mt-2 flex h-12 w-full items-center justify-between rounded-lg border bg-superficie px-4 text-left text-base transition-colors hover:border-borde-accion ${abierto ? 'border-2 border-borde-accion' : 'border-borde'}`}>
-          <span className={elegida ? 'font-semibold text-titulo' : 'text-secundario'}>{elegida ? `${elegida} h` : 'hh:mm'}</span>
-          <Icon n="reloj" className="text-icono" />
-        </button>
-        {abierto && (
-          <div ref={panel} id={`${id}-panel`} role="dialog" aria-label="Elige la hora de tu cita"
-            className="absolute inset-x-0 top-full z-20 mt-2 rounded-xl border border-borde bg-superficie p-3 shadow-[0_8px_24px_-4px_rgba(0,68,128,0.24)]">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="pb-1 text-center t-meta font-semibold text-secundario">Hora</p>
-                <div role="group" aria-label="Hora" onKeyDown={onKeyCol} className="flex max-h-60 flex-col gap-1 overflow-y-auto pr-1">
-                  {horas.map((h) => <button key={h} data-col="h" aria-pressed={hh === h} onClick={() => elegirHora(h)} className={opcion(hh === h)}>{h}</button>)}
-                </div>
-              </div>
-              <div>
-                <p className="pb-1 text-center t-meta font-semibold text-secundario">Minutos</p>
-                <div role="group" aria-label="Minutos" onKeyDown={onKeyCol} className="flex max-h-60 flex-col gap-1 overflow-y-auto pr-1">
-                  {hh
-                    ? libres(hh).map((m) => <button key={m} data-col="m" aria-pressed={elegida === `${hh}:${m}`} onClick={() => elegirMin(m)} className={opcion(elegida === `${hh}:${m}`)}>:{m}</button>)
-                    : <p className="px-2 py-3 text-center t-meta text-secundario">Primero elige la hora</p>}
-                </div>
-              </div>
-            </div>
-            <div className="mt-2 flex justify-end border-t border-borde pt-2">
-              <button onClick={() => cerrar()} className="inline-flex min-h-12 items-center rounded-md px-3 font-semibold text-enlace hover:bg-resaltado">Cancelar</button>
+      <p className="mt-1 t-meta text-secundario">{libres.length === 1 ? '1 horario disponible' : `${libres.length} horarios disponibles`}. Toca el que prefieras.</p>
+      {FRANJAS.map(([nombre, enFranja]) => {
+        const horas = libres.filter(enFranja)
+        if (!horas.length) return null
+        return (
+          <div key={nombre} className="mt-4">
+            <p id={`${id}-${nombre}`} className="text-base font-semibold text-titulo">{nombre}</p>
+            <div role="group" aria-labelledby={`${id}-${nombre}`} className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
+              {horas.map((h) => {
+                const on = elegida === h
+                return (
+                  <button key={h} onClick={() => onHora(h)} aria-pressed={on} aria-label={`${h} horas`}
+                    className={`min-h-12 rounded-lg border text-base font-semibold transition-colors ${on ? 'border-accion-hover bg-accion-hover text-white' : 'border-borde bg-superficie text-titulo hover:border-borde-accion hover:bg-resaltado'}`}>
+                    {h}
+                  </button>
+                )
+              })}
             </div>
           </div>
-        )}
-      </div>
+        )
+      })}
       <div role="status" className="mt-4">
-        {elegida
-          ? <p className="flex items-center gap-2 rounded-lg bg-resaltado px-4 py-3 t-body text-titulo"><Icon n="calendar" className="text-enlace" />Tu cita: <strong className="font-bold">{elegida} h</strong></p>
-          : siguiente && (
-            <div className="flex flex-wrap items-center gap-x-3 t-body text-titulo">
-              <span>Próximo horario libre: <strong className="font-bold">{siguiente} h</strong></span>
-              <button onClick={() => onHora(siguiente)} className="inline-flex min-h-12 items-center rounded-md px-1 font-semibold text-enlace underline underline-offset-4 hover:text-enlace-hover">Usar este horario</button>
-            </div>
-          )}
+        {elegida && (
+          <p className="flex items-start gap-2 rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">
+            <Icon n="calendar" className="mt-0.5 text-enlace" />
+            <span>Tu cita: <strong className="font-bold first-letter:uppercase">{fechaLarga(fecha)}, {elegida} h</strong></span>
+          </p>
+        )}
       </div>
     </div>
   )

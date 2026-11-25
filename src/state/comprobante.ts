@@ -2,7 +2,7 @@
    Es un documento de DEMOSTRACIÓN: lo dice en el propio PDF. Los colores son los de la paleta clara del sitio
    (el PDF no depende del modo oscuro). */
 import { findClinic } from '../data/clinics'
-import { METODO, fechaLarga, type Tramite } from './tramite'
+import { METODO, fechaLarga, fmtTelefono, type Tramite } from './tramite'
 
 const C = {
   titulo: '#1F2933', cuerpo: '#43474A', secundario: '#5B6B7A', borde: '#D6E4F5', resaltado: '#EBF4FC',
@@ -71,7 +71,7 @@ export async function descargarComprobante(t: Tramite): Promise<string> {
   // datos
   const c = findClinic(t.clinica)
   const filas: [string, string[]][] = [
-    ['Paciente', [t.paciente.nombre?.trim() || '—']],
+    ['Paciente', [t.paciente.nombre?.trim() || '—', ...(t.paciente.telefono ? [`Tel. ${fmtTelefono(t.paciente.telefono)}`] : [])]],
     ['Estudio', [t.estudio?.nombre ?? '—', t.estudio?.precio ? `${t.estudio.precio} IVA incluido` : 'Precio según tu clínica']],
     ['Clínica', c ? [c.name, c.address, [c.phone && `Tel. ${c.phone}`, c.horario].filter(Boolean).join(' · ')].filter(Boolean) : ['Pendiente de elegir']],
     ['Fecha y hora', t.fecha && t.hora ? [`${fechaLarga(t.fecha).replace(/^./, (l) => l.toUpperCase())} · ${t.hora} h`, 'Horario de demostración'] : ['—']],
