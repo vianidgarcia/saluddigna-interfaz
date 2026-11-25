@@ -34,7 +34,7 @@ export function SelectorHorario({ fecha, hora, onFecha, onHora, id = 'h' }: {
   const elegirDia = (v: string) => { onFecha(v); setToques((n) => n + 1) }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-10">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-10">
       <Calendario id={id} fecha={fechaValida} hoy={hoy} max={max} habilitado={habilitado} onFecha={elegirDia} />
       <div>
         {fechaValida
@@ -178,13 +178,15 @@ function SelectorHora({ id, fecha, hora, onHora, toques }: { id: string; fecha: 
         <span className="rounded-full bg-resaltado px-3 py-1 t-meta font-semibold text-titulo">Horarios de demostración</span>
       </div>
       <p className="mt-1 t-meta text-secundario">{libres.length === 1 ? '1 horario disponible' : `${libres.length} horarios disponibles`}. Toca el que prefieras.</p>
+      {/* mañana a la izquierda, tarde a la derecha; el cartel de la cita va debajo de las dos */}
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-6">
       {FRANJAS.map(([nombre, enFranja]) => {
         const horas = libres.filter(enFranja)
-        if (!horas.length) return null
         return (
-          <div key={nombre} className="mt-4">
+          <div key={nombre} className="min-w-0">
             <p id={`${id}-${nombre}`} className="text-base font-semibold text-titulo">{nombre}</p>
-            <div role="group" aria-labelledby={`${id}-${nombre}`} className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
+            {!horas.length && <p className="mt-2 t-meta text-secundario">Sin horarios este día</p>}
+            {horas.length > 0 && <div role="group" aria-labelledby={`${id}-${nombre}`} className="mt-2 grid grid-cols-2 gap-2">
               {horas.map((h) => {
                 const on = elegida === h
                 return (
@@ -194,10 +196,11 @@ function SelectorHora({ id, fecha, hora, onHora, toques }: { id: string; fecha: 
                   </button>
                 )
               })}
-            </div>
+            </div>}
           </div>
         )
       })}
+      </div>
       <div role="status" className="mt-4">
         {elegida && (
           <p className="flex items-start gap-2 rounded-lg bg-resaltado px-4 py-3 t-body text-titulo">

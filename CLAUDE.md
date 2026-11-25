@@ -24,12 +24,15 @@ Stack: React 19 + Vite + Tailwind 4 + TypeScript. Datos simulados (no hay APIs r
 - Mis trámites (paciente) NO muestra historial; la línea de tiempo es solo para el asesor.
 - Fecha y hora: `SelectorHorario`. Calendario de 6 semanas fijas: los días de otros meses y los días sin lugar se
   ven atenuados y no se pueden elegir; solo los días disponibles son botones. Horarios: los libres a la vista,
-  agrupados en Mañana y Tarde, un toque para elegir; en teléfono, al tocar un día la vista baja a los horarios.
+  en dos columnas (Mañana a la izquierda, Tarde a la derecha), un toque para elegir; el cartel "Tu cita" va debajo
+  de ambas. En teléfono, al tocar un día la vista baja a los horarios.
   Nunca permite fechas u horas pasadas (`yaPaso`).
 - Clínicas: `data/clinicasData.ts` (GENERADO: 261 sucursales reales de las páginas públicas de salud-digna.org, con
   estado, ciudad, dirección, teléfono, coordenadas y horario; no editar a mano ni inventar clínicas) y
   `data/clinics.ts` (búsqueda y distancias). `components/BuscadorClinica`: estado, ciudad, sucursal y
   "Usar mi ubicación" (geolocalización real; si no se comparte, ubicación de ejemplo en Culiacán) AL PRINCIPIO.
+  Con ubicación (y sin otros filtros) la lista y el mapa muestran SOLO las cercanas: a `RADIO_KM` (30 km) o menos; si
+  no hay ninguna tan cerca, las 5 más cercanas, y el texto lo explica.
   Sin paginar: la lista muestra todas las coincidencias del filtro y SOLO esas (no se fija la clínica elegida).
   Paso 2: "Aún no lo decido" arriba a la derecha; escritorio: lista agrupada por ciudad (con su propio scroll) junto
   al mapa; teléfono: conmutador Lista / Mapa. Lo usan el paso 2 del agendado y `ClinicSheet` (también el asesor).

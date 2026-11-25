@@ -8,6 +8,9 @@ import { outlineBtn } from './ui'
    Sin paginar: con un filtro activo se muestran TODAS las coincidencias y solo ellas. */
 
 type Ubicacion = Punto & { fuente: 'real' | 'demo' }
+/** "Cerca de ti": clínicas a esta distancia o menos (en línea recta). */
+export const RADIO_KM = 30
+const MINIMO_CERCA = 5
 
 export function useBuscadorClinica() {
   const [estado, setEstadoRaw] = useState('')
@@ -32,12 +35,19 @@ export function useBuscadorClinica() {
     )
   }
 
-  const todos = buscarClinicas({ estado, ciudad, q, desde: ubicacion })
+  const ordenadas = buscarClinicas({ estado, ciudad, q, desde: ubicacion })
+  // con ubicación (y sin otros filtros): solo las cercanas, a RADIO_KM o menos; si no hay tantas, las más cercanas
+  const soloCerca = !!ubicacion && !estado && !ciudad && !q
+  const enRadio = soloCerca ? ordenadas.filter((r) => (r.km ?? Infinity) <= RADIO_KM) : ordenadas
+  const pocas = soloCerca && enRadio.length < MINIMO_CERCA
+  const todos = soloCerca ? (pocas ? ordenadas.slice(0, MINIMO_CERCA) : enRadio) : ordenadas
   const activo = !!(estado || ciudad || q || ubicacion)
   return {
     estado, setEstado, ciudad, setCiudad, q, setQ,
     ubicacion, buscando, usarUbicacion, limpiar, activo,
     total: todos.length,
+    /** con ubicación: true si se muestran solo las cercanas; `pocas` si no hubo ninguna a RADIO_KM y se muestran las más cercanas */
+    soloCerca, pocas,
     /** todas las coincidencias (sin paginar) para el mapa; sin filtros, el directorio completo */
     enMapa: todos,
     resultados: activo ? todos : [],
@@ -91,7 +101,9 @@ export function FiltrosClinica({ b, id, inputRef }: { b: Buscador; id: string; i
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4">
         <p role="status" className="t-meta text-secundario">
           {!b.activo ? `${b.total} clínicas en ${ESTADOS.length} estados. Usa tu ubicación o elige un estado para ver la lista.`
-            : `${b.total === 1 ? '1 clínica encontrada' : `${b.total} clínicas encontradas`}${b.ubicacion ? (b.ubicacion.fuente === 'real' ? ', de la más cercana a la más lejana' : ` cerca de ${UBICACION_DEMO.nombre} (ubicación de ejemplo: el navegador no compartió la tuya)`) : ''}`}
+            : b.soloCerca
+              ? `${b.pocas ? `No hay clínicas a menos de ${RADIO_KM} km; te mostramos las ${b.total} más cercanas` : `${b.total === 1 ? '1 clínica' : `${b.total} clínicas`} a menos de ${RADIO_KM} km`}${b.ubicacion?.fuente === 'demo' ? ` de ${UBICACION_DEMO.nombre} (ubicación de ejemplo: el navegador no compartió la tuya)` : ' de ti'}, de la más cercana a la más lejana.`
+              : `${b.total === 1 ? '1 clínica encontrada' : `${b.total} clínicas encontradas`}${b.ubicacion ? ', de la más cercana a la más lejana' : ''}`}
         </p>
         {b.activo && <button onClick={b.limpiar} className="inline-flex min-h-12 items-center rounded-md px-1 t-meta font-semibold text-enlace underline underline-offset-4 hover:text-enlace-hover">Limpiar filtros</button>}
       </div>
